@@ -133,6 +133,8 @@ interface BioStrings {
     // ---- New transaction sheet
     val newTransactionTitle: String
     val newTransactionNote: String
+    val txTabRegistered: String
+    val txTabGuest: String
     val fieldClientId: String
     val fieldClientName: String
     val fieldVolume: String
@@ -213,6 +215,10 @@ interface BioStrings {
     val pickupStatusArrived: String
     val pickupNoteArrived: String
     val routeToAgen: String
+    val driverGpsBadge: String
+    val driverRouteToday: String
+    val driverEstVolume: String
+    val driverVisitOrder: String
     val segmentClient: String
     val segmentDriver: String
     val agenDriverNoTransactionsHint: String

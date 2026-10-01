@@ -1,6 +1,7 @@
 package id.biojelan.app.ui.agen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -211,7 +212,6 @@ private fun AgenDriverTxDetailSheet(
     val s = BioText.current
     var confirmReject by remember { mutableStateOf(false) }
     BioSheet(s.transactionDetailTitle, onDismiss) {
-        DetailRow(s.labelTransactionId, tx.transactionId, mono = true)
         DetailRow(s.labelDate, formatDateTime(tx.createdAt))
         DetailRow(s.labelDriver, s.roleDriver)
         DetailRow(s.labelVolume, formatLiter(tx.volumeLiter))
@@ -275,7 +275,6 @@ private fun AgenTxDetailSheet(
     val s = BioText.current
     var confirmCancel by remember { mutableStateOf(false) }
     BioSheet(s.transactionDetailTitle, onDismiss) {
-        DetailRow(s.labelTransactionId, tx.transactionId, mono = true)
         DetailRow(s.labelDate, formatDateTime(tx.createdAt))
         DetailRow(s.labelClient, tx.counterpartName(Viewer.Agen))
         DetailRow(s.labelClientId, tx.klienId.ifBlank { "—" }, mono = true)
@@ -312,6 +311,12 @@ private fun AgenTxDetailSheet(
     }
 }
 
+/** Mode input transaksi: Klien terdaftar vs Tamu. */
+private enum class TxInputMode { Registered, Guest }
+
+/** Tipe kontak yang dipilih lewat dropdown. */
+private enum class ContactType { Email, Phone }
+
 @Composable
 fun NewTransactionSheet(
     price: Long,
@@ -322,13 +327,20 @@ fun NewTransactionSheet(
 ) {
     val c = BioTheme.colors
     val s = BioText.current
+    var mode by remember { mutableStateOf(TxInputMode.Registered) }
+    var contactType by remember { mutableStateOf(ContactType.Email) }
     var contact by remember { mutableStateOf("") }
+    var guestName by remember { mutableStateOf("") }
+    var guestPhone by remember { mutableStateOf("") }
     var volumeText by remember { mutableStateOf("") }
     var errors by remember { mutableStateOf(emptyMap<String, String>()) }
     val preview by vm.clientPreview.collectAsStateWithLifecycle()
 
-    // Debounce: nunggu jeda ngetik sebelum nembak check-clients-email/phone, dibatalkan otomatis kalau
-    // teksnya berubah lagi sebelum jeda selesai (LaunchedEffect restart tiap `contact` berubah).
+    // Reset contact saat ganti mode atau tipe kontak
+    LaunchedEffect(mode) { contact = ""; guestName = ""; guestPhone = ""; errors = emptyMap(); vm.resetClientPreview() }
+    LaunchedEffect(contactType) { contact = ""; errors = emptyMap(); vm.resetClientPreview() }
+
+    // Debounce check-clients-email/phone
     LaunchedEffect(contact) {
         delay(450)
         vm.checkClientContact(contact)
@@ -340,27 +352,55 @@ fun NewTransactionSheet(
 
     fun submit() {
         val found = buildMap {
-            if (contact.isBlank()) put("contact", s.errorClientContactRequired)
+            if (mode == TxInputMode.Registered) {
+                if (contact.isBlank()) put("contact", s.errorClientContactRequired)
+            } else {
+                if (guestName.isBlank()) put("guestName", s.errorClientNameRequired)
+                if (guestPhone.isBlank()) put("guestPhone", s.errorClientContactRequired)
+            }
             if (volume == null || volume <= 0) put("volume", s.errorVolumeRequired)
             else if (volume > 1000) put("volume", s.errorVolumeTooLarge)
         }
         errors = found
-        if (found.isEmpty() && volume != null) onSubmit(contact.trim(), volume)
+        if (found.isEmpty() && volume != null) {
+            val resolvedContact = if (mode == TxInputMode.Registered) contact.trim() else guestPhone.trim()
+            onSubmit(resolvedContact, volume)
+        }
     }
 
     BioSheet(s.newTransactionTitle, onDismiss) {
-        NoteBox(
-            s.newTransactionNote,
-            icon = BioIcons.IdCard,
+        SegmentedTabs(
+            options = listOf(s.txTabRegistered, s.txTabGuest),
+            selected = if (mode == TxInputMode.Registered) 0 else 1,
+            onSelect = { mode = if (it == 0) TxInputMode.Registered else TxInputMode.Guest },
             modifier = Modifier.padding(bottom = 16.dp),
         )
-        BioField(
-            s.fieldClientContact, contact, { contact = it },
-            placeholder = s.placeholderClientContact,
-            keyboardType = KeyboardType.Email,
-            error = errors["contact"],
-        )
-        ClientPreviewRow(preview, Modifier.padding(top = 4.dp, bottom = 4.dp))
+
+        if (mode == TxInputMode.Registered) {
+            // Dropdown pilih tipe kontak
+            ContactTypeSelector(contactType) { contactType = it }
+            BioField(
+                if (contactType == ContactType.Email) s.fieldEmail else s.fieldPhone,
+                contact, { contact = it },
+                placeholder = if (contactType == ContactType.Email) s.placeholderEmail else s.placeholderPhone,
+                keyboardType = if (contactType == ContactType.Email) KeyboardType.Email else KeyboardType.Phone,
+                error = errors["contact"],
+            )
+            ClientPreviewRow(preview, Modifier.padding(top = 4.dp, bottom = 4.dp))
+        } else {
+            BioField(
+                s.fieldClientName, guestName, { guestName = it },
+                placeholder = s.placeholderClientName,
+                error = errors["guestName"],
+            )
+            BioField(
+                s.fieldPhone, guestPhone, { guestPhone = it },
+                placeholder = s.placeholderPhone,
+                keyboardType = KeyboardType.Phone,
+                error = errors["guestPhone"],
+            )
+        }
+
         BioField(
             s.fieldVolume, volumeText, { volumeText = it },
             placeholder = s.placeholderVolume,
@@ -369,7 +409,7 @@ fun NewTransactionSheet(
             onDone = { submit() },
             error = errors["volume"],
         )
-        BioField(s.fieldPricePerLiter, formatRupiah(price), {}, readOnly = true, hint = s.hintReferencePriceKilang)
+        BioField(s.fieldPricePerLiter, formatRupiah(price), {}, readOnly = true)
 
         Row(
             Modifier.fillMaxWidth().background(c.primaryTint, RoundedCornerShape(14.dp)).padding(14.dp),
@@ -384,10 +424,39 @@ fun NewTransactionSheet(
             s.submitToClient,
             onClick = { submit() },
             loading = creating,
-            // Tetap bisa ditekan meski NotFound: mungkin memang mau kirim ke email tamu (GUEST_CLIENT_EMAIL di
-            // backend) atau preview gagal karena jaringan. Server yang menentukan valid/tidaknya secara final.
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/** Selector tipe kontak: Email atau No. Telepon. */
+@Composable
+private fun ContactTypeSelector(selected: ContactType, onChange: (ContactType) -> Unit) {
+    val c = BioTheme.colors
+    val s = BioText.current
+    Row(
+        Modifier.fillMaxWidth().padding(bottom = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ContactType.entries.forEach { type ->
+            val on = type == selected
+            val label = when (type) {
+                ContactType.Email -> s.fieldEmail
+                ContactType.Phone -> s.labelPhone
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (on) c.primaryTint else c.surface, RoundedCornerShape(12.dp))
+                    .border(1.5.dp, if (on) c.primary else c.line, RoundedCornerShape(12.dp))
+                    .clickable { onChange(type) }
+                    .padding(vertical = 11.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, style = BioTheme.type.bodyBold, color = if (on) c.primary else c.inkSoft)
+            }
+        }
     }
 }
 
