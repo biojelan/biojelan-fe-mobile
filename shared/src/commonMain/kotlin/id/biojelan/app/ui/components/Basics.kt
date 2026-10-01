@@ -1,9 +1,15 @@
 package id.biojelan.app.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +26,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -80,12 +89,20 @@ fun BioButton(
         BtnStyle.Amber -> Triple(c.amber, c.ink, c.amber)
     }
     val shape = RoundedCornerShape(14.dp)
+    // Press-down scale animation
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+    )
     Box(
         modifier = modifier
+            .graphicsLayer(scaleX = scale, scaleY = scale)
             .clip(shape)
             .background(if (active || style != BtnStyle.Primary) bg else c.line, shape)
             .border(BorderStroke(1.5.dp, if (active || style != BtnStyle.Primary) borderColor else c.line), shape)
-            .clickable(enabled = active, onClick = onClick)
+            .clickable(enabled = active, interactionSource = interactionSource, indication = LocalIndication.current, onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) {

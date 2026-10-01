@@ -38,6 +38,11 @@ import id.biojelan.app.ui.strings.BioText
 import id.biojelan.app.ui.theme.BioTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 
 // ------------------------------------------------------------------ bottom sheet
 
@@ -115,17 +120,25 @@ fun ToastHost(state: ToastState, modifier: Modifier = Modifier) {
             delay(2600)
             state.dismiss(message.id)
         }
-        Box(modifier.fillMaxWidth().padding(horizontal = 22.dp), contentAlignment = Alignment.BottomCenter) {
-            Row(
-                modifier = Modifier
-                    .background(c.ink, RoundedCornerShape(14.dp))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Icon(BioIcons.Check, contentDescription = null, tint = c.amber, modifier = Modifier.size(16.dp))
-                Text(message.text, style = BioTheme.type.bodyBold, color = c.paper, modifier = Modifier.weight(1f, fill = false))
-            }
+    }
+    // AnimatedVisibility handles the enter/exit transitions
+    AnimatedVisibility(
+        visible = message != null,
+        enter = slideInVertically(initialOffsetY = { it / 3 }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it / 3 }) + fadeOut(),
+        modifier = modifier.fillMaxWidth().padding(horizontal = 22.dp),
+    ) {
+        // Use message snapshot so content doesn't vanish during exit animation
+        val text = message?.text.orEmpty()
+        Row(
+            modifier = Modifier
+                .background(c.ink, RoundedCornerShape(14.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(BioIcons.Check, contentDescription = null, tint = c.amber, modifier = Modifier.size(16.dp))
+            Text(text, style = BioTheme.type.bodyBold, color = c.paper, modifier = Modifier.weight(1f, fill = false))
         }
     }
 }
