@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>BioJelan — Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #EEF2E8;
+    --paper: #F7F9F3;
+    --surface: #FFFFFF;
+    --ink: #16261F;
+    --ink-soft: #3C4A41;
+    --muted: #6E7C71;
+    --line: #DCE3D5;
+    --primary: #1F4D3A;
+    --primary-deep: #143329;
+    --primary-tint: #DCEADF;
+    --amber: #D69A2E;
+    --amber-deep: #A8701D;
+    --amber-tint: #F7E9CB;
+    --rust: #B85C2A;
+    --rust-tint: #F3DFCF;
+    --steel: #3E6B85;
+    --shadow: 0 18px 40px -18px rgba(20,45,35,.35);
+    --radius-lg: 26px;
+    --radius-md: 16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh; min-height:100dvh;
+    background:
+      radial-gradient(60% 50% at 15% 0%, #E3ECD8 0%, transparent 60%),
+      radial-gradient(50% 40% at 100% 100%, #E1E9DA 0%, transparent 60%),
+      var(--bg);
+    font-family:'Manrope',sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    padding:40px 16px; color:var(--ink);
+  }
+  h1,h2,h3,.display{font-family:'Sora',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace; letter-spacing:.01em;}
+
+  /* ---------- iPhone-style device frame ---------- */
+  .device{
+    position:relative; width:393px; max-width:100%;
+    background:linear-gradient(155deg,#3a3a3d 0%,#1c1c1e 45%,#0b0b0c 100%);
+    border-radius:56px; padding:12px;
+    box-shadow:var(--shadow), 0 0 0 1.5px rgba(0,0,0,.5), inset 0 0 1.5px 1px rgba(255,255,255,.12);
+  }
+  .device::before{content:""; position:absolute; left:-3px; top:132px; width:3px; height:58px; background:#141416; border-radius:2px 0 0 2px; box-shadow:0 74px 0 #141416;}
+  .device::after{content:""; position:absolute; right:-3px; top:172px; width:3px; height:88px; background:#141416; border-radius:0 2px 2px 0;}
+  .screen-frame{position:relative; width:100%; height:852px; background:var(--paper); border-radius:44px; overflow:hidden; display:flex; flex-direction:column;}
+  .dynamic-island{position:absolute; top:14px; left:50%; transform:translateX(-50%); width:104px; height:31px; background:#000; border-radius:18px; z-index:50;}
+  .statusbar{height:50px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 28px; font-size:13px; font-weight:700; color:var(--ink); position:relative; z-index:40;}
+  .statusbar .icons{display:flex; align-items:center; gap:6px;}
+
+  .content{flex:1 1 auto; min-height:0; overflow-y:auto; -ms-overflow-style:none; scrollbar-width:none; padding-bottom:14px;}
+  .content::-webkit-scrollbar{display:none;}
+  .screen{display:none; flex-direction:column; flex:1; min-height:0; overflow:hidden;}
+  .screen.active{display:flex;}
+
+  /* ---------- Full-bleed on real phones — the mockup frame above is for desktop/Figma capture only ---------- */
+  @media (max-width:480px){
+    body{display:block; padding:0; background:var(--paper);}
+    body > div{width:100%;}
+    .device{width:100%; background:transparent; border-radius:0; padding:0; box-shadow:none;}
+    .device::before, .device::after{display:none;}
+    .screen-frame{height:100vh; height:100dvh; border-radius:0;}
+    .dynamic-island{display:none;}
+    .statusbar{padding-top:env(safe-area-inset-top);}
+    .modal-overlay{border-radius:0;}
+  }
+
+  .tabbar{display:none; flex:0 0 auto; background:var(--surface); border-top:1px solid var(--line); padding:9px 4px calc(25px + env(safe-area-inset-bottom)); justify-content:space-between; gap:2px; position:relative; z-index:40;}
+  .tabbar.visible{display:flex;}
+  .tab{flex:1; border:none; background:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; padding:5px 2px 2px; color:var(--muted); font-size:10px; font-weight:700; border-radius:12px;}
+  .tab svg{width:20px; height:20px; stroke:var(--muted); fill:none; stroke-width:1.8;}
+  .tab.active{color:var(--primary);}
+  .tab.active svg{stroke:var(--primary);}
+  .dot{width:4px;height:4px;border-radius:50%;background:var(--primary);opacity:0;margin-top:-2px;}
+  .tab.active .dot{opacity:1;}
+
+  .topbar{padding:6px 22px 16px; display:flex; align-items:center; justify-content:space-between;}
+  .topbar h2{margin:0; font-size:19px; font-weight:700; letter-spacing:-.01em;}
+  .subheader{display:flex; align-items:center; gap:12px; padding:6px 22px 4px;}
+  .subheader .backbtn{width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex:0 0 auto; cursor:pointer;}
+  .subheader .backbtn svg{width:17px;height:17px;stroke:var(--ink);fill:none;stroke-width:2.2;}
+  .subheader h2{margin:0; font-size:17px; font-weight:800;}
+  .iconbtn{width:36px; height:36px; border-radius:50%; background:var(--surface); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--ink); flex:0 0 auto; cursor:pointer;}
+  .iconbtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;}
+
+  .btn{border:none; cursor:pointer; font-family:'Manrope',sans-serif; font-weight:800; font-size:14.5px; border-radius:14px; padding:14px 18px; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;}
+  .btn-primary{background:var(--primary); color:#EFF6EF;} .btn-primary:active{background:var(--primary-deep);}
+  .btn-primary:disabled{background:var(--line); color:var(--muted); cursor:default;}
+  .btn-outline{background:var(--surface); color:var(--ink); border:1.5px solid var(--line);}
+  .btn-rust{background:var(--rust); color:#fff;} .btn-rust:active{background:#8f471e;}
+  .btn-ghost{background:transparent; color:var(--primary); border:1.5px solid var(--primary-tint);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:6px;}
+  .field input{width:100%; padding:13px 14px; border-radius:12px; border:1.5px solid var(--line); background:var(--surface); font-family:'Manrope',sans-serif; font-size:14px; color:var(--ink); outline:none;}
+  .field input:focus{border-color:var(--primary);}
+  .field input[readonly]{background:var(--primary-tint); color:var(--primary); font-weight:800; border-color:var(--primary-tint);}
+  .field .hint{font-size:11px; color:var(--muted); margin-top:5px;}
+
+  .chip{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; padding:4px 10px; border-radius:999px;}
+  .chip-todo{background:var(--line); color:var(--ink-soft);}
+  .chip-active{background:var(--amber-tint); color:var(--amber-deep);}
+  .chip-done{background:var(--primary-tint); color:var(--primary);}
+  .chip-skip{background:var(--rust-tint); color:var(--rust);}
+  .chip-open{background:var(--primary-tint); color:var(--primary);}
+  .chip-closed{background:var(--rust-tint); color:var(--rust);}
+  .drip{width:7px;height:7px;border-radius:50% 50% 50% 0; transform:rotate(45deg); display:inline-block;}
+  .drip-open{background:var(--primary);}
+  .drip-closed{background:var(--rust);}
+
+  .detail-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed var(--line); font-size:13px;}
+  .detail-row:last-of-type{border-bottom:none;}
+  .detail-row .k{color:var(--muted); font-weight:600;}
+  .detail-row .v{font-weight:800;}
+  .note-mini{display:flex; gap:9px; align-items:flex-start; background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:11px 13px; margin-top:16px; font-size:11.5px; color:var(--ink-soft); line-height:1.55; font-weight:600;}
+  .note-mini.rust{background:var(--rust-tint); color:var(--rust); border-color:transparent;}
+
+  /* ---------- Auth (shared, no role picker) ---------- */
+  #screen-auth .content{display:flex; flex-direction:column; justify-content:flex-start; padding:36px 26px 30px;}
+  .brandmark{width:56px;height:56px;border-radius:16px; background:linear-gradient(155deg,var(--amber) 0%, var(--amber-deep) 100%); display:flex; align-items:center; justify-content:center; margin-bottom:18px; box-shadow:0 10px 22px -8px rgba(168,112,29,.55);}
+  .brandmark svg{width:28px;height:28px;fill:#fff;}
+  .auth-title{font-size:24px; font-weight:800; margin:0 0 6px; letter-spacing:-.02em;}
+  .auth-sub{font-size:13.5px; color:var(--muted); margin:0 0 22px; line-height:1.5;}
+  .role-note{display:flex; align-items:center; gap:9px; background:var(--amber-tint); border-radius:14px; padding:11px 13px; margin-bottom:20px;}
+  .role-note svg{width:17px;height:17px; stroke:var(--amber-deep); fill:none; stroke-width:1.9; flex:0 0 auto;}
+  .role-note span{font-size:11.5px; color:#5C4419; font-weight:700; line-height:1.4;}
+  .auth-foot{text-align:center; font-size:12.5px; color:var(--muted); margin-top:16px;}
+  .auth-foot a{color:var(--primary); font-weight:800; text-decoration:none;}
+  .auth-tabs{display:flex; gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:4px; margin-bottom:20px;}
+  .auth-tab{flex:1; text-align:center; padding:10px; border-radius:11px; font-size:13px; font-weight:800; color:var(--muted); cursor:pointer;}
+  .auth-tab.active{background:var(--primary); color:#EFF6EF;}
+  .forgot{display:block; text-align:right; font-size:12px; font-weight:700; color:var(--primary); text-decoration:none; margin:-6px 0 18px;}
+  .guest-link{display:flex; align-items:center; gap:9px; justify-content:center; margin-top:22px; font-size:13.5px; font-weight:800; color:var(--primary); cursor:pointer; padding:13px 16px; border-radius:14px; border:1.5px solid var(--primary-tint); background:var(--primary-tint);}
+  .guest-link:active{background:var(--primary-tint); filter:brightness(0.96);}
+  .guest-link svg{width:17px;height:17px; stroke:var(--primary); fill:none; stroke-width:2; flex:0 0 auto;}
+
+  /* ---------- OTP ---------- */
+  .otp-wrap{padding:0 26px; display:flex; flex-direction:column; align-items:center; text-align:center;}
+  .otp-icon{width:64px;height:64px;border-radius:18px; background:var(--primary-tint); display:flex; align-items:center; justify-content:center; margin-bottom:18px;}
+  .otp-icon svg{width:28px;height:28px; stroke:var(--primary); fill:none; stroke-width:1.8;}
+  .otp-wrap h1{font-size:20px; font-weight:800; margin:0 0 8px;}
+  .otp-wrap p{font-size:13px; color:var(--muted); line-height:1.6; margin:0 0 22px;}
+  .otp-boxes{display:flex; gap:8px; margin-bottom:18px;}
+  .otp-box{width:44px; height:52px; border-radius:12px; border:1.5px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:800; font-family:'IBM Plex Mono',monospace;}
+  .otp-box.filled{border-color:var(--primary); color:var(--primary); background:var(--primary-tint);}
+  .resend{font-size:12.5px; color:var(--muted); margin-bottom:22px;}
+  .resend a{color:var(--primary); font-weight:800; text-decoration:none;}
+
+  /* ---------- Home (Klien/Agen) ---------- */
+  .hello{padding:20px 22px 4px;}
+  .hello.row{display:flex; align-items:flex-start; justify-content:space-between;}
+  .hello .eyebrow{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--amber-deep); margin:0 0 4px;}
+  .hello h2{margin:0; font-size:19px; font-weight:800; letter-spacing:-.02em;}
+  .hello .veh{font-size:12px; color:var(--muted); margin-top:3px;}
+  .status-toggle{display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 12px 6px 6px; cursor:pointer;}
+  .status-toggle .knob{width:20px;height:20px;border-radius:50%; background:var(--primary); transition:background .15s;}
+  .status-toggle.closed .knob{background:var(--rust);}
+  .status-toggle span{font-size:11.5px; font-weight:800;}
+
+  .price-band{margin:16px 22px 6px; background:linear-gradient(160deg, var(--primary) 0%, var(--primary-deep) 100%); border-radius:var(--radius-lg); padding:18px 18px 16px; display:flex; align-items:center; gap:14px; color:#EFF6EF; position:relative; overflow:hidden;}
+  .price-band::after{content:""; position:absolute; right:-30px; top:-40px; width:150px; height:150px; border-radius:50%; background:rgba(214,154,46,.18);}
+  .drop-gauge{flex:0 0 auto; position:relative; z-index:2;}
+  .drop-gauge svg{width:66px; height:82px; display:block;}
+  .price-info{position:relative; z-index:2;}
+  .price-info .label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; opacity:.75; margin:0 0 2px;}
+  .price-info .amount{font-size:23px; font-weight:800; margin:0; font-family:'Sora',sans-serif; letter-spacing:-.01em;}
+  .price-info .amount span{font-size:12.5px; font-weight:600; opacity:.75;}
+  .price-info .updated{font-size:11px; opacity:.7; margin:5px 0 0; display:flex; align-items:center; gap:5px;}
+
+  .quick-row{display:flex; gap:10px; padding:18px 22px 4px;}
+  .quick{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;}
+  .quick .qicon{width:52px;height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center;}
+  .quick .qicon svg{width:23px;height:23px; stroke-width:1.9; fill:none;}
+  .quick span{font-size:11px; font-weight:800; color:var(--ink-soft); text-align:center;}
+
+  .stat-row{display:flex; gap:10px; padding:16px 22px 4px;}
+  .stat-card{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:13px;}
+  .stat-card .n{font-size:18px; font-weight:800; font-family:'Sora',sans-serif;}
+  .stat-card .l{font-size:10.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin-top:2px;}
+
+  .stock-card{margin:16px 22px 0; background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:16px; display:flex; gap:14px; align-items:center;}
+  .stock-mini-gauge{flex:0 0 auto; width:54px; height:66px; position:relative;}
+  .stock-mini-gauge svg{width:100%; height:100%;}
+  .stock-body{flex:1;}
+  .stock-body .row1{display:flex; align-items:center; justify-content:space-between;}
+  .stock-body h4{margin:0; font-size:14px; font-weight:800;}
+  .stock-body .sub{font-size:11.5px; color:var(--muted); margin-top:2px;}
+  .progress-track{height:7px; border-radius:99px; background:var(--line); margin-top:10px; overflow:hidden;}
+  .progress-fill{height:100%; border-radius:99px; background:linear-gradient(90deg,var(--amber),var(--primary));}
+
+  .cta-row{padding:18px 22px 4px;}
+
+  .section-head{display:flex; align-items:center; justify-content:space-between; padding:20px 22px 10px;}
+  .section-head h3{margin:0; font-size:15.5px; font-weight:800; letter-spacing:-.01em;}
+  .section-head a{font-size:12px; font-weight:800; color:var(--primary); text-decoration:none; cursor:pointer;}
+
+  .agent-scroll{display:flex; gap:12px; padding:6px 22px 4px; overflow-x:auto; -ms-overflow-style:none; scrollbar-width:none;}
+  .agent-scroll::-webkit-scrollbar{display:none;}
+  .agent-card{flex:0 0 auto; width:150px; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px;}
+  .agent-avatar{width:38px;height:38px; border-radius:11px; background:var(--primary-tint); color:var(--primary); display:flex; align-items:center; justify-content:center; flex:0 0 auto; font-weight:800; font-size:13px; margin-bottom:10px;}
+  .agent-card h4{margin:0 0 6px; font-size:12.5px; font-weight:800;}
+  .agent-meta{font-size:10.5px; color:var(--muted); font-weight:700; display:flex; align-items:center; gap:5px;}
+
+  .tip-card{display:flex; gap:11px; align-items:flex-start; margin:16px 22px 6px; background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:14px;}
+  .tip-card svg{width:18px;height:18px; stroke:var(--amber-deep); fill:none; stroke-width:1.8; flex:0 0 auto; margin-top:1px;}
+  .tip-card p{margin:0; font-size:11.5px; color:var(--ink-soft); line-height:1.6;}
+
+  /* ---------- Locator ---------- */
+  .search-wrap{padding:0 22px 12px;}
+  .search-box{display:flex; align-items:center; gap:10px; background:var(--surface); border:1.5px solid var(--line); border-radius:14px; padding:12px 15px;}
+  .search-box svg{width:17px;height:17px; stroke:var(--muted); fill:none; stroke-width:2;}
+  .search-box input{border:none; outline:none; font-family:'Manrope',sans-serif; font-size:13.5px; width:100%; background:transparent;}
+  .filter-row{display:flex; gap:8px; padding:0 22px 14px; overflow-x:auto;}
+  .filter-pill{font-size:11.5px; font-weight:700; padding:8px 14px; border-radius:999px; border:1.5px solid var(--line); color:var(--ink-soft); background:var(--surface); white-space:nowrap;}
+  .filter-pill.active{background:var(--primary); color:#EFF6EF; border-color:var(--primary);}
+  .mapcard{margin:0 22px 16px; border-radius:20px; overflow:hidden; border:1px solid var(--line); height:150px; position:relative;
+    background: repeating-linear-gradient(0deg,#E4EBDA 0 2px, transparent 2px 26px), repeating-linear-gradient(90deg,#E4EBDA 0 2px, transparent 2px 26px), #EEF2E4;}
+  .pin{position:absolute; width:26px; height:26px;}
+  .pin svg{width:100%; height:100%; fill:var(--primary);}
+  .pin.p1{top:38px; left:46px;} .pin.p2{top:70px; left:130px;} .pin.p3{top:30px; left:210px;} .pin.you{top:100px; left:190px; width:16px; height:16px;}
+  .pin.you svg{fill:var(--steel); opacity:.5;}
+  /* Driver's route map uses numbered stop badges instead of teardrop pins — separate namespace, own coordinates */
+  .rpin{position:absolute; width:24px; height:24px;}
+  .rpin.p1{top:70px; left:34px;} .rpin.p2{top:36px; left:150px;} .rpin.p3{top:76px; left:250px;}
+  .pin-num{position:absolute; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#fff; top:0; left:0;}
+  .agent-list{padding:0 22px 16px; display:flex; flex-direction:column; gap:10px;}
+  .agent-row{display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:13px;}
+  .agent-row .info{flex:1; min-width:0;}
+  .agent-row h4{margin:0 0 3px; font-size:13.5px; font-weight:800;}
+  .meta-line{font-size:11px; color:var(--muted); font-weight:700; display:flex; align-items:center; gap:5px;}
+  .agent-row .go{stroke:var(--muted); width:16px; height:16px; flex:0 0 auto;}
+  .agent-row .go svg{width:100%;height:100%;}
+
+  /* ---------- History / Transaksi ---------- */
+  .summary-strip{display:flex; gap:10px; padding:6px 22px 16px;}
+  .sum-card{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px;}
+  .sum-card .n{font-size:16.5px; font-weight:800; font-family:'Sora',sans-serif;}
+  .sum-card .l{font-size:10.5px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+  .tx-list{padding:0 22px 90px; display:flex; flex-direction:column; gap:10px;}
+  .tx-row{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:13px 14px; display:flex; gap:12px; align-items:center; cursor:pointer;}
+  .tx-row:active{background:var(--paper);}
+  .tx-icon,.tx-avatar{width:38px;height:38px; border-radius:11px; background:var(--primary-tint); color:var(--primary); display:flex; align-items:center; justify-content:center; flex:0 0 auto; font-weight:800; font-size:13px;}
+  .tx-icon svg{width:18px;height:18px; stroke:var(--primary); fill:none; stroke-width:1.7;}
+  .tx-icon.cancel{background:var(--rust-tint);} .tx-icon.cancel svg{stroke:var(--rust);}
+  .tx-avatar.cancel{background:var(--rust-tint); color:var(--rust);}
+  .tx-mid{flex:1; min-width:0;}
+  .tx-mid h4{margin:0 0 3px; font-size:13.5px; font-weight:800;}
+  .tx-mid .d{font-size:11.5px; color:var(--muted);}
+  .tx-right{text-align:right; flex:0 0 auto;}
+  .tx-right .amt{font-size:13px; font-weight:800; font-family:'IBM Plex Mono',monospace;}
+  .tx-right .st{font-size:10.5px; font-weight:800; margin-top:4px;}
+  .tx-right .st.ok{color:var(--primary);}
+  .tx-right .st.no{color:var(--rust);}
+  .tx-right .st.pending{color:var(--amber-deep);}
+  .tx-right .cancel-hint{display:flex; align-items:center; justify-content:flex-end; gap:3px; font-size:9.5px; font-weight:700; color:var(--rust); margin-top:4px; white-space:nowrap;}
+  .tx-right .cancel-hint svg{width:10px; height:10px; stroke:var(--rust); fill:none; stroke-width:2.4; flex:0 0 auto;}
+  .tx-chev{stroke:var(--muted); width:16px; height:16px; flex:0 0 auto;}
+
+  .fab{position:absolute; right:22px; bottom:118px; width:56px; height:56px; border-radius:18px; background:var(--amber-deep); box-shadow:0 14px 26px -10px rgba(168,112,29,.6); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:30;}
+  .fab svg{width:24px;height:24px; stroke:#fff; fill:none; stroke-width:2.4;}
+
+  /* ---------- Stok ---------- */
+  .gauge-big-wrap{display:flex; flex-direction:column; align-items:center; padding:14px 22px 6px;}
+  .gauge-big{width:150px; height:184px; position:relative;}
+  .gauge-big svg{width:100%; height:100%;}
+  .gauge-label{text-align:center; margin-top:10px;}
+  .gauge-label .n{font-size:26px; font-weight:800; font-family:'Sora',sans-serif;}
+  .gauge-label .l{font-size:12px; color:var(--muted); font-weight:700;}
+  .threshold-note{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px;}
+  .stock-history{padding:0 22px 16px; display:flex; flex-direction:column; gap:8px;}
+  .stock-hrow{display:flex; align-items:center; gap:11px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:11px 13px;}
+  .stock-hrow svg{width:16px;height:16px; stroke:var(--primary); fill:none; stroke-width:2; flex:0 0 auto;}
+  .stock-hrow .k{font-size:12.5px; font-weight:700; flex:1;}
+  .stock-hrow .v{font-size:12.5px; font-weight:800; font-family:'IBM Plex Mono',monospace; color:var(--primary);}
+  .stock-hrow .t{font-size:10.5px; color:var(--muted);}
+  .issue-link{margin:4px 22px 18px; text-align:center; font-size:12px; font-weight:800; color:var(--rust); padding:12px; border-radius:14px; border:1.5px dashed var(--rust-tint); cursor:pointer;}
+
+  /* ---------- Pickup / Route ---------- */
+  .pickup-hero,.route-summary{margin:16px 22px 0; background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:18px;}
+  .route-summary{background:linear-gradient(160deg, var(--primary) 0%, var(--primary-deep) 100%); color:#EFF6EF; position:relative; overflow:hidden;}
+  .route-summary::after{content:""; position:absolute; right:-30px; top:-40px; width:150px; height:150px; border-radius:50%; background:rgba(214,154,46,.18);}
+  .route-summary .pid{font-size:11px; opacity:.75; font-weight:700; position:relative; z-index:2;}
+  .route-summary h3{margin:6px 0 14px; font-size:17px; font-weight:800; position:relative; z-index:2;}
+  .rs-stats{display:flex; gap:18px; position:relative; z-index:2;}
+  .rs-stats .n{font-size:16px; font-weight:800; font-family:'Sora',sans-serif;}
+  .rs-stats .l{font-size:10.5px; opacity:.7; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+  .pickup-hero .top-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .pickup-hero .pid{font-size:11px; color:var(--muted); font-weight:700;}
+  .pickup-hero .pid span{font-family:'IBM Plex Mono',monospace; color:var(--ink);}
+
+  .stepper{display:flex; margin:6px 0 4px;}
+  .stepper.pad{margin:18px 22px 4px;}
+  .step{flex:1; display:flex; flex-direction:column; align-items:center; position:relative;}
+  .step .circ{width:26px;height:26px;border-radius:50%; background:var(--line); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:var(--muted); z-index:2;}
+  .step.done .circ{background:var(--primary); color:#fff;}
+  .step.now .circ{background:var(--amber-deep); color:#fff; box-shadow:0 0 0 4px var(--amber-tint);}
+  .step .lbl{font-size:8.5px; font-weight:800; color:var(--muted); margin-top:6px; text-align:center;}
+  .step.done .lbl, .step.now .lbl{color:var(--ink);}
+  .step::before{content:""; position:absolute; top:13px; left:-50%; width:100%; height:2px; background:var(--line); z-index:1;}
+  .step:first-child::before{display:none;}
+  .step.done::before{background:var(--primary);}
+
+  .driver-card,.stop-hero{margin:16px 22px 0; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:15px; display:flex; gap:13px; align-items:center;}
+  .driver-avatar,.stop-avatar{width:46px;height:46px; border-radius:13px; background:var(--amber-tint); color:var(--amber-deep); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; flex:0 0 auto;}
+  .driver-card h4,.stop-hero h3{margin:0 0 3px; font-size:13.5px; font-weight:800;}
+  .driver-card .sub,.stop-hero .sub{font-size:11.5px; color:var(--muted);}
+  .stop-hero .callbtn{width:38px;height:38px;border-radius:50%; background:var(--primary-tint); color:var(--primary); display:flex; align-items:center; justify-content:center; flex:0 0 auto; cursor:pointer;}
+  .stop-hero .callbtn svg{width:17px;height:17px; stroke:currentColor; fill:none; stroke-width:2;}
+
+  .info-grid{margin:14px 22px 0; display:flex; flex-direction:column; gap:9px;}
+  .info-item{display:flex; gap:12px; align-items:flex-start; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 13px;}
+  .info-item svg{width:16px;height:16px;stroke:var(--primary);fill:none;stroke-width:1.9;flex:0 0 auto;margin-top:1px;}
+  .info-item .k{font-size:10.5px;color:var(--muted);font-weight:700;margin:0 0 2px;}
+  .info-item .v{font-size:12.5px;font-weight:700;margin:0;}
+
+  .route-agents{padding:0 22px; margin-top:4px;}
+  .route-agent{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line); font-size:12px;}
+  .route-agent:last-child{border-bottom:none;}
+  .route-agent .num{width:20px;height:20px;border-radius:50%;background:var(--primary-tint); color:var(--primary); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .route-agent .nm{flex:1; font-weight:700;}
+  .route-agent .st{font-size:10.5px; color:var(--muted); font-weight:700;}
+
+  /* ---------- GPS badge / stop-list (Driver) ---------- */
+  .gps-badge{display:flex; align-items:center; gap:8px; margin:16px 22px 0; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 13px;}
+  .gps-dot{width:9px;height:9px;border-radius:50%; background:var(--primary); position:relative; flex:0 0 auto;}
+  .gps-dot::after{content:""; position:absolute; inset:-5px; border-radius:50%; border:2px solid var(--primary); opacity:.4; animation:pulse 1.8s ease-out infinite;}
+  @keyframes pulse{0%{transform:scale(.6); opacity:.6;} 100%{transform:scale(1.8); opacity:0;}}
+  .gps-badge span{font-size:11.5px; font-weight:700; color:var(--ink-soft);}
+  .cash-note{display:flex; gap:10px; align-items:flex-start; background:var(--amber-tint); border-radius:14px; padding:12px 13px; margin-bottom:16px;}
+  .cash-note svg{width:17px;height:17px; stroke:var(--amber-deep); fill:none; stroke-width:1.9; flex:0 0 auto; margin-top:1px;}
+  .cash-note span{font-size:11.5px; color:#5C4419; font-weight:700; line-height:1.5;}
+  .notif-banner{display:flex; align-items:flex-start; gap:12px; margin:14px 22px 0; background:linear-gradient(135deg, var(--primary-tint), var(--surface)); border:1.5px solid var(--primary-tint); border-radius:16px; padding:13px 14px;}
+  .notif-icon{width:36px; height:36px; border-radius:11px; background:var(--primary); display:flex; align-items:center; justify-content:center; flex:0 0 auto; position:relative;}
+  .notif-icon svg{width:17px; height:17px; stroke:#fff; fill:none; stroke-width:2;}
+  .notif-icon::after{content:""; position:absolute; top:-2px; right:-2px; width:9px; height:9px; border-radius:50%; background:var(--rust); border:2px solid var(--surface);}
+  .notif-body{flex:1; min-width:0;}
+  .notif-body h4{margin:0 0 2px; font-size:12.5px; font-weight:800; color:var(--primary);}
+  .notif-body p{margin:0; font-size:11.5px; color:var(--ink-soft);}
+  .notif-close{width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:0 0 auto;}
+  .notif-close svg{width:13px; height:13px; stroke:var(--muted); fill:none; stroke-width:2.2;}
+  .stop-list{padding:0 22px 16px; display:flex; flex-direction:column; gap:10px;}
+  .stop-row{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:13px; display:flex; gap:12px; align-items:center; cursor:pointer;}
+  .stop-row.current{border-color:var(--amber-deep); box-shadow:0 0 0 1.5px var(--amber-deep) inset;}
+  .stop-num{width:30px;height:30px; border-radius:50%; background:var(--primary-tint); color:var(--primary); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .stop-num.done{background:var(--primary); color:#fff;}
+  .stop-num.current{background:var(--amber-deep); color:#fff;}
+  .stop-mid{flex:1; min-width:0;}
+  .stop-mid h4{margin:0 0 3px; font-size:13.5px; font-weight:800;}
+  .stop-mid .d{font-size:11.5px; color:var(--muted);}
+  .stop-go{stroke:var(--muted); width:16px; height:16px; flex:0 0 auto;}
+  .lock-note{display:flex; align-items:center; gap:6px; font-size:10px; font-weight:800; color:var(--amber-deep); margin-top:4px; cursor:pointer;}
+  .lock-note svg{width:12px;height:12px; stroke:var(--amber-deep); fill:none; stroke-width:2.2;}
+  .proof-thumb{margin:14px 22px 0; border-radius:16px; overflow:hidden; border:1px solid var(--line); display:flex; align-items:center; gap:12px; padding:12px; background:var(--primary-tint);}
+  .proof-thumb .ic{width:38px;height:38px;border-radius:10px; background:var(--primary); display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .proof-thumb .ic svg{width:18px;height:18px; stroke:#fff; fill:none; stroke-width:2;}
+  .proof-thumb span{font-size:12px; font-weight:800; color:var(--primary);}
+  .action-area{padding:20px 22px 4px; display:flex; flex-direction:column; gap:10px;}
+  .skip-link{text-align:center; font-size:12px; font-weight:800; color:var(--rust); margin-top:2px; cursor:pointer;}
+  .hist-card{margin:0 22px 12px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px;}
+  .hist-card .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .hist-card h4{margin:0; font-size:13.5px; font-weight:800;}
+  .hist-card .date{font-size:11px; color:var(--muted);}
+  .hist-mini{display:flex; gap:14px; font-size:11.5px; color:var(--ink-soft);}
+  .hist-mini b{font-family:'Sora',sans-serif;}
+
+  /* ---------- Profil (shared shape, per-role content) ---------- */
+  .profile-top{padding:24px 22px 18px; display:flex; flex-direction:column; align-items:center; text-align:center;}
+  .avatar-big{width:74px;height:74px;border-radius:20px; background:linear-gradient(155deg,var(--amber),var(--amber-deep)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:24px; font-weight:800; font-family:'Sora',sans-serif; box-shadow:0 12px 24px -10px rgba(168,112,29,.5); margin-bottom:12px;}
+  .profile-top h3{margin:0 0 3px; font-size:16.5px; font-weight:800;}
+  .profile-top .sub{font-size:12px; color:var(--muted);}
+  .profile-block{padding:0 22px 4px;}
+  .profile-block .label-sm{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:16px 0 8px;}
+  .prow{display:flex; align-items:center; gap:12px; padding:13px 14px; background:var(--surface); border:1px solid var(--line); border-radius:14px; margin-bottom:8px;}
+  .prow svg{width:17px;height:17px; stroke:var(--primary); fill:none; stroke-width:1.9; flex:0 0 auto;}
+  .prow .k{font-size:10.5px; color:var(--muted); font-weight:700; margin:0 0 2px;}
+  .prow .v{font-size:13px; font-weight:700; margin:0;}
+  .prow .chev{margin-left:auto; stroke:var(--muted); width:15px; height:15px;}
+  .toggle-pill{margin-left:auto; font-size:10.5px; font-weight:800; padding:5px 10px; border-radius:999px; background:var(--primary-tint); color:var(--primary);}
+  .logout{margin:18px 22px 4px; color:var(--rust); font-weight:800; font-size:13.5px; text-align:center; padding:12px; border-radius:14px; border:1.5px solid var(--rust-tint); cursor:pointer;}
+
+  /* ---------- Sheet / modal ---------- */
+  .modal-overlay{position:absolute; inset:0; background:rgba(15,28,22,.42); z-index:80; display:none; align-items:flex-end; border-radius:44px; overflow:hidden;}
+  .modal-overlay.open{display:flex;}
+  .modal-sheet{width:100%; background:var(--paper); border-radius:24px 24px 0 0; padding:10px 22px calc(26px + env(safe-area-inset-bottom)); max-height:86%; overflow-y:auto;}
+  .sheet-handle{width:38px;height:4px;border-radius:99px; background:var(--line); margin:6px auto 16px;}
+  .sheet-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .sheet-head h3{margin:0; font-size:16px; font-weight:800;}
+  .sheet-close{width:30px;height:30px;border-radius:50%; background:var(--surface); border:1px solid var(--line); display:flex;align-items:center;justify-content:center; cursor:pointer;}
+  .sheet-close svg{width:14px;height:14px; stroke:var(--ink); fill:none; stroke-width:2.2;}
+  .total-preview{background:var(--primary-tint); border-radius:14px; padding:14px; display:flex; align-items:center; justify-content:space-between; margin:6px 0 20px;}
+  .total-preview .k{font-size:12px; font-weight:800; color:var(--primary);}
+  .total-preview .v{font-size:19px; font-weight:800; color:var(--primary); font-family:'IBM Plex Mono',monospace;}
+
+  .camera-box{aspect-ratio:4/3; border-radius:18px; border:2px dashed var(--line); background:var(--surface); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; cursor:pointer;}
+  .camera-box.filled{border-style:solid; border-color:var(--primary); background:var(--primary-tint);}
+  .camera-box svg{width:34px;height:34px; stroke:var(--muted); fill:none; stroke-width:1.6;}
+  .camera-box.filled svg{stroke:var(--primary);}
+  .camera-box span{font-size:12.5px; font-weight:700; color:var(--muted);}
+  .camera-box.filled span{color:var(--primary);}
+
+  .reason-opt{display:flex; align-items:center; gap:10px; padding:13px 14px; border:1.5px solid var(--line); border-radius:14px; margin-bottom:9px; cursor:pointer; font-size:13px; font-weight:700;}
+  .reason-opt.sel{border-color:var(--rust); background:var(--rust-tint); color:var(--rust);}
+
+  .dirigen-counter{display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:14px 16px; margin-bottom:16px;}
+  .dirigen-counter .lbl{font-size:12.5px; font-weight:700; color:var(--ink-soft);}
+  .dirigen-counter .lbl b{display:block; font-size:11px; color:var(--muted); font-weight:600; margin-top:2px;}
+  .ctr-controls{display:flex; align-items:center; gap:12px;}
+  .ctr-btn{width:34px;height:34px;border-radius:10px; border:1.5px solid var(--line); background:var(--paper); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; font-weight:800; color:var(--primary);}
+  .ctr-val{font-size:20px; font-weight:800; font-family:'Sora',sans-serif; min-width:24px; text-align:center;}
+  .liter-preview{text-align:center; font-size:12px; color:var(--muted); font-weight:700; margin:-8px 0 16px;}
+  .liter-preview b{color:var(--primary); font-family:'IBM Plex Mono',monospace;}
+
+  .qc-toggle{display:flex; gap:10px; margin-bottom:16px;}
+  .qc-opt{flex:1; text-align:center; padding:16px 10px; border-radius:16px; border:1.5px solid var(--line); cursor:pointer;}
+  .qc-opt svg{width:22px;height:22px; stroke:var(--muted); fill:none; stroke-width:2; margin-bottom:6px;}
+  .qc-opt span{display:block; font-size:12.5px; font-weight:800; color:var(--ink-soft);}
+  .qc-opt.sel-good{border-color:var(--primary); background:var(--primary-tint);} .qc-opt.sel-good svg{stroke:var(--primary);} .qc-opt.sel-good span{color:var(--primary);}
+  .qc-opt.sel-bad{border-color:var(--rust); background:var(--rust-tint);} .qc-opt.sel-bad svg{stroke:var(--rust);} .qc-opt.sel-bad span{color:var(--rust);}
+
+  .pay-tabs{display:flex; gap:8px; margin-bottom:16px;}
+  .pay-tab{flex:1; text-align:center; padding:11px; border-radius:12px; border:1.5px solid var(--line); font-size:12.5px; font-weight:800; color:var(--ink-soft); cursor:pointer;}
+  .pay-tab.active{border-color:var(--primary); background:var(--primary-tint); color:var(--primary);}
+  .otp-row{display:flex; gap:8px; margin-bottom:16px;}
+  .midtrans-badge{display:flex; align-items:center; gap:10px; background:var(--surface); border:1.5px solid var(--line); border-radius:14px; padding:12px 13px; margin-bottom:16px;}
+  .midtrans-badge .ic{width:32px;height:32px;border-radius:9px; background:var(--steel); display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .midtrans-badge .ic svg{width:16px;height:16px; stroke:#fff; fill:none; stroke-width:2;}
+  .midtrans-badge span{font-size:11.5px; font-weight:700; color:var(--ink-soft); line-height:1.4;}
+
+  .toast{position:absolute; left:22px; right:22px; bottom:96px; background:var(--ink); color:#F2F5EF; padding:13px 16px; border-radius:14px; display:flex; align-items:center; gap:10px; font-size:12.5px; font-weight:700; z-index:90; opacity:0; transform:translateY(8px); transition:all .2s; pointer-events:none;}
+  .toast.show{opacity:1; transform:translateY(0);}
+  .toast svg{width:17px;height:17px; stroke:var(--amber); fill:none; stroke-width:2.2; flex:0 0 auto;}
+
+  /* ---------- Narrow phones (SE-size, ~360px and under) ---------- */
+  @media (max-width: 360px){
+    .topbar, .subheader, .hello, .section-head, .stop-list, .action-area, .profile-block, .info-grid, .summary-strip, .route-agents{padding-left:16px; padding-right:16px;}
+    .route-summary, .hist-card{margin-left:16px; margin-right:16px;}
+  }
+
+  /* ---------- DEV TOOL (not part of product design — see comment in body) ---------- */
+  .dev-fab{position:fixed; right:18px; bottom:18px; width:44px; height:44px; border-radius:12px; background:#2B2E33; box-shadow:0 8px 20px -6px rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:500;}
+  .dev-fab svg{width:19px; height:19px; stroke:#F2C744; fill:none; stroke-width:1.8;}
+  .dev-panel{position:fixed; right:18px; bottom:70px; width:190px; background:#1E2024; border-radius:14px; padding:8px; box-shadow:0 16px 36px -12px rgba(0,0,0,.5); z-index:500; display:none;}
+  .dev-panel.open{display:block;}
+  .dev-panel-head{font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#8A8F98; padding:6px 8px 8px;}
+  .dev-item{display:block; width:100%; text-align:left; background:transparent; border:none; color:#E6E8EB; font-family:'Manrope',sans-serif; font-size:12.5px; font-weight:700; padding:9px 8px; border-radius:8px; cursor:pointer;}
+  .dev-item:active{background:#2B2E33;}
+  .dev-item small{display:block; font-size:10px; font-weight:600; color:#8A8F98; margin-top:1px;}
+</style>
+</head>
+<body>
+<div>
+<div class="device">
+  <div class="screen-frame">
+    <div class="dynamic-island"></div>
+    <div class="statusbar">
+      <span>09:41</span>
+      <div class="icons">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M1 4c4-4 10-4 14 0M3.2 6.6c2.6-2.6 7-2.6 9.6 0M5.6 9c1.4-1.4 3.4-1.4 4.8 0" stroke="#16261F" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11" r="1" fill="#16261F"/></svg>
+        <svg width="22" height="12" viewBox="0 0 22 12" fill="none"><rect x="1" y="1" width="18" height="10" rx="2.5" stroke="#16261F" stroke-width="1.2"/><rect x="2.5" y="2.5" width="13" height="7" rx="1.2" fill="#16261F"/><rect x="20" y="4" width="1.5" height="4" rx="0.7" fill="#16261F"/></svg>
+      </div>
+    </div>
+
+    <!-- ===================== AUTH (SHARED — no role picker) ===================== -->
+    <section class="screen active" id="screen-auth">
+      <div class="content">
+        <div class="brandmark"><svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg></div>
+        <h1 class="auth-title" id="authTitle">Masuk ke BioJelan</h1>
+        <p class="auth-sub" id="authSub">Satu akun BioJelan untuk semua — tampilan otomatis disesuaikan dengan peran Anda.</p>
+
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tabLogin" onclick="setAuthMode('login')">Masuk</div>
+          <div class="auth-tab" id="tabRegister" onclick="setAuthMode('register')">Daftar</div>
+        </div>
+
+        <form onsubmit="return login(event)">
+          <div class="field" id="fieldName" style="display:none">
+            <label>Nama lengkap</label>
+            <input type="text" placeholder="Nama sesuai KTP" value="Siti Rahayu">
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="authEmail" placeholder="nama@email.com" value="siti.rahayu@gmail.com">
+          </div>
+          <div class="field">
+            <label>Kata sandi</label>
+            <input type="password" placeholder="Minimal 8 karakter" value="••••••••">
+          </div>
+          <a class="forgot" id="forgotLink" href="#">Lupa kata sandi?</a>
+          <button class="btn btn-primary" type="submit" id="authSubmit">Masuk</button>
+        </form>
+
+        <p class="auth-foot" id="authFoot">Belum punya akun? <a href="#" onclick="setAuthMode('register');return false;">Daftar sekarang</a></p>
+
+        <div class="guest-link" onclick="viewAsGuest()">
+          <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Lihat sebagai tamu — lokasi Agen & harga jelantah terkini
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== OTP VERIFICATION (SHARED) ===================== -->
+    <section class="screen" id="screen-otp">
+      <div class="content">
+        <div class="subheader">
+          <div class="backbtn" onclick="goSub('auth')"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+        </div>
+        <div class="otp-wrap">
+          <div class="otp-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+          <h1>Verifikasi email Anda</h1>
+          <p>Masukkan 6 digit kode OTP yang dikirim ke<br><strong id="otpEmail">siti.rahayu@gmail.com</strong></p>
+          <div class="otp-boxes" id="otpBoxes">
+            <div class="otp-box filled">4</div><div class="otp-box filled">1</div><div class="otp-box filled">9</div>
+            <div class="otp-box filled">2</div><div class="otp-box filled">0</div><div class="otp-box filled">7</div>
+          </div>
+          <div class="resend">Tidak menerima kode? <a href="#" onclick="return false;">Kirim ulang</a></div>
+          <button class="btn btn-primary" style="width:100%" onclick="verifyOtp()">Verifikasi</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== KLIEN: HOME ===================== -->
+    <section class="screen" id="screen-klien-home">
+      <div class="content">
+        <div class="hello row">
+          <p class="eyebrow">Selamat pagi</p>
+          <h2>Siti Rahayu 👋</h2>
+        </div>
+
+        <div class="price-band">
+          <div class="drop-gauge">
+            <svg viewBox="0 0 100 124">
+              <defs><linearGradient id="dropfillK" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E9BA55"/><stop offset="100%" stop-color="#A8701D"/></linearGradient></defs>
+              <path d="M50 4 C24 40 10 64 10 82 C10 105 28 120 50 120 C72 120 90 105 90 82 C90 64 76 40 50 4 Z" fill="url(#dropfillK)"/>
+            </svg>
+          </div>
+          <div class="price-info">
+            <p class="label">Harga jelantah hari ini</p>
+            <p class="amount">Rp 6.500<span>/liter</span></p>
+            <p class="updated"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Diperbarui 07.00 oleh Kilang</p>
+          </div>
+        </div>
+
+        <div class="quick-row">
+          <div class="quick" onclick="showScreen('locator')">
+            <div class="qicon" style="background:var(--primary-tint)"><svg viewBox="0 0 24 24" stroke="var(--primary)"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></div>
+            <span>Cari Agen</span>
+          </div>
+          <div class="quick" onclick="showScreen('history')">
+            <div class="qicon" style="background:var(--amber-tint)"><svg viewBox="0 0 24 24" stroke="var(--amber-deep)"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg></div>
+            <span>Riwayat</span>
+          </div>
+          <div class="quick" onclick="alert('Redirect ke WhatsApp Agen')">
+            <div class="qicon" style="background:var(--rust-tint)"><svg viewBox="0 0 24 24" stroke="var(--rust)"><path d="M21 11.5a8.5 8.5 0 01-12.4 7.6L4 20l1-4.4A8.5 8.5 0 1121 11.5z"/></svg></div>
+            <span>Jemput Rumah</span>
+          </div>
+        </div>
+
+        <div class="section-head"><h3>Agen terdekat</h3><a onclick="showScreen('locator')">Lihat semua</a></div>
+        <div class="agent-scroll">
+          <div class="agent-card" style="cursor:pointer" onclick="openAgent('home','BJ','Agen Barokah Jaya','Buka','350 m','Jl. Merdeka No. 12, Kotabumi','08.00 – 17.00 WIB, Senin–Sabtu',true)">
+            <div class="agent-avatar">BJ</div><h4>Agen Barokah Jaya</h4>
+            <div class="agent-meta"><span class="drip drip-open"></span> 350 m &middot; Buka</div>
+          </div>
+          <div class="agent-card" style="cursor:pointer" onclick="openAgent('home','SR','Agen Sumber Rezeki','Buka','800 m','Jl. Kenanga No. 5, Kotabumi','08.00 – 17.00 WIB, Senin–Sabtu',true)">
+            <div class="agent-avatar">SR</div><h4>Agen Sumber Rezeki</h4>
+            <div class="agent-meta"><span class="drip drip-open"></span> 800 m &middot; Buka</div>
+          </div>
+          <div class="agent-card" style="cursor:pointer" onclick="openAgent('home','MJ','Agen Makmur Jelantah','Tutup','1,2 km','Jl. Dahlia No. 3, Kotabumi','08.00 – 17.00 WIB, Senin–Sabtu',false)">
+            <div class="agent-avatar">MJ</div><h4>Agen Makmur Jelantah</h4>
+            <div class="agent-meta"><span class="drip drip-closed"></span> 1,2 km &middot; Tutup</div>
+          </div>
+        </div>
+
+        <div class="tip-card">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <p><strong>Bawa langsung ke Agen</strong> untuk transaksi tercepat. Layanan jemput ke rumah dikenakan biaya terpisah dan diatur lewat WhatsApp.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== KLIEN: LOCATOR ===================== -->
+    <section class="screen" id="screen-klien-locator">
+      <div class="content">
+        <div class="topbar"><h2>Cari Agen</h2><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></div></div>
+        <div class="tip-card" id="guestBanner" style="display:none; margin:0 22px 14px; cursor:pointer;" onclick="exitGuestToRegister()">
+          <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <p><strong>Lihat sebagai tamu.</strong> Daftar untuk mulai menjual minyak jelantah dan melihat riwayat transaksi Anda. Ketuk untuk mendaftar.</p>
+        </div>
+        <div class="price-band" id="guestPriceBand" style="display:none; margin:0 22px 14px;">
+          <div class="drop-gauge">
+            <svg viewBox="0 0 100 124">
+              <defs><linearGradient id="dropfillG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E9BA55"/><stop offset="100%" stop-color="#A8701D"/></linearGradient></defs>
+              <path d="M50 4 C24 40 10 64 10 82 C10 105 28 120 50 120 C72 120 90 105 90 82 C90 64 76 40 50 4 Z" fill="url(#dropfillG)"/>
+            </svg>
+          </div>
+          <div class="price-info">
+            <p class="label">Harga jelantah hari ini</p>
+            <p class="amount">Rp 6.500<span>/liter</span></p>
+            <p class="updated"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Diperbarui 07.00 oleh Kilang</p>
+          </div>
+        </div>
+        <div class="search-wrap"><div class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" placeholder="Cari nama Agen atau area..."></div></div>
+        <div class="filter-row">
+          <div class="filter-pill active">Terdekat</div><div class="filter-pill">Buka sekarang</div><div class="filter-pill">Terima jemput</div>
+        </div>
+        <div class="mapcard">
+          <div class="pin p1"><svg viewBox="0 0 24 24"><path d="M12 2C8 2 5 5 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-4-3-7-7-7z"/></svg></div>
+          <div class="pin p2"><svg viewBox="0 0 24 24"><path d="M12 2C8 2 5 5 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-4-3-7-7-7z"/></svg></div>
+          <div class="pin p3"><svg viewBox="0 0 24 24"><path d="M12 2C8 2 5 5 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-4-3-7-7-7z"/></svg></div>
+          <div class="pin you"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg></div>
+        </div>
+        <div class="agent-list">
+          <div class="agent-row" style="cursor:pointer" onclick="openAgent('locator','BJ','Agen Barokah Jaya','Buka','350 m','Jl. Merdeka No. 12, Kotabumi','08.00 – 17.00 WIB, Senin–Sabtu',true)">
+            <div class="agent-avatar">BJ</div><div class="info"><h4>Agen Barokah Jaya</h4><div class="meta-line"><span class="drip drip-open"></span> Buka &middot; 350 m &middot; Jl. Merdeka No. 12</div></div><div class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+          <div class="agent-row" style="cursor:pointer" onclick="openAgent('locator','SR','Agen Sumber Rezeki','Buka','800 m','Jl. Kenanga No. 5, Kotabumi','08.00 – 17.00 WIB, Senin–Sabtu',true)">
+            <div class="agent-avatar">SR</div><div class="info"><h4>Agen Sumber Rezeki</h4><div class="meta-line"><span class="drip drip-open"></span> Buka &middot; 800 m &middot; Jl. Kenanga No. 5</div></div><div class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+          <div class="agent-row" style="cursor:pointer" onclick="openAgent('locator','MJ','Agen Makmur Jelantah','Tutup','1,2 km','Jl. Dahlia No. 3, Kotabumi','Buka lagi besok 08.00 WIB',false)">
+            <div class="agent-avatar">MJ</div><div class="info"><h4>Agen Makmur Jelantah</h4><div class="meta-line"><span class="drip drip-closed"></span> Tutup &middot; 1,2 km &middot; Buka lagi 08.00</div></div><div class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+          <div class="agent-row" style="cursor:pointer" onclick="openAgent('locator','TA','Agen Tunas Asri','Buka','2,1 km','Jl. Anggrek No. 9, Kotabumi','08.00 – 16.00 WIB, Senin–Sabtu',true)">
+            <div class="agent-avatar">TA</div><div class="info"><h4>Agen Tunas Asri</h4><div class="meta-line"><span class="drip drip-open"></span> Buka &middot; 2,1 km &middot; Jl. Anggrek No. 9</div></div><div class="go"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== KLIEN: HISTORY ===================== -->
+    <section class="screen" id="screen-klien-history">
+      <div class="content">
+        <div class="topbar"><h2>Riwayat Transaksi</h2><div class="iconbtn"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div></div>
+        <div class="summary-strip">
+          <div class="sum-card"><div class="n">18</div><div class="l">Transaksi</div></div>
+          <div class="sum-card"><div class="n">142 L</div><div class="l">Total minyak</div></div>
+          <div class="sum-card"><div class="n mono" style="font-size:14px">Rp 923rb</div><div class="l">Total diterima</div></div>
+        </div>
+        <div class="tx-list">
+          <div class="tx-row" onclick="openTx('TRX-20260807-014','7 Agu 2026, 10.42','Agen Barokah Jaya','12 L','Rp 6.500 /L','Rp 78.000','Selesai')">
+            <div class="tx-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg></div>
+            <div class="tx-mid"><h4>Agen Barokah Jaya</h4><div class="d">7 Agu 2026 &middot; 12 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 78.000</div><div class="st ok">Selesai</div></div>
+          </div>
+          <div class="tx-row" onclick="openTx('TRX-20260803-009','3 Agu 2026, 16.05','Agen Sumber Rezeki','8 L','Rp 6.300 /L','Rp 50.400','Selesai')">
+            <div class="tx-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg></div>
+            <div class="tx-mid"><h4>Agen Sumber Rezeki</h4><div class="d">3 Agu 2026 &middot; 8 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 50.400</div><div class="st ok">Selesai</div></div>
+          </div>
+          <div class="tx-row" onclick="openTx('TRX-20260729-002','29 Jul 2026, 09.18','Agen Makmur Jelantah','5 L','Rp 6.300 /L','Rp 31.500','Dibatalkan')">
+            <div class="tx-icon cancel"><svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg></div>
+            <div class="tx-mid"><h4>Agen Makmur Jelantah</h4><div class="d">29 Jul 2026 &middot; 5 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 31.500</div><div class="st no">Dibatalkan</div></div>
+          </div>
+          <div class="tx-row" onclick="openTx('TRX-20260722-021','22 Jul 2026, 13.50','Agen Barokah Jaya','15 L','Rp 6.200 /L','Rp 93.000','Selesai')">
+            <div class="tx-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg></div>
+            <div class="tx-mid"><h4>Agen Barokah Jaya</h4><div class="d">22 Jul 2026 &middot; 15 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 93.000</div><div class="st ok">Selesai</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== KLIEN: PROFILE ===================== -->
+    <section class="screen" id="screen-klien-profile">
+      <div class="content">
+        <div class="profile-top">
+          <div class="avatar-big">SR</div>
+          <h3>Siti Rahayu</h3>
+          <div class="sub">Klien &middot; Bergabung Mar 2026</div>
+        </div>
+        <div class="profile-block">
+          <div class="label-sm">Data diri</div>
+          <div class="prow"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><div><div class="k">Email</div><div class="v">siti.rahayu@gmail.com</div></div></div>
+          <div class="prow"><svg viewBox="0 0 24 24"><path d="M4 5c0 8 7 15 15 15l2-4-5-2-2 2c-2-1-4-3-5-5l2-2-2-5z"/></svg><div><div class="k">No. telepon</div><div class="v">0812-3456-7890</div></div></div>
+
+          <div class="label-sm">Jadi mitra BioJelan</div>
+          <div class="prow" id="upgradeAgenRow" style="cursor:pointer" onclick="openUpgradeAgenSheet()">
+            <svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg>
+            <div><div class="k">Beli &amp; jual minyak jelantah</div><div class="v" id="upgradeAgenLabel">Upgrade ke Agen</div></div>
+            <span class="toggle-pill" id="upgradeAgenBadge" style="display:none; background:var(--amber-tint); color:var(--amber-deep);">Menunggu</span>
+            <svg class="chev" id="upgradeAgenChev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <p id="upgradeAgenHint" style="display:none; font-size:10.5px; color:var(--muted); margin:-2px 0 14px; line-height:1.5; padding:0 2px;">Prototipe: keluar dan masuk kembali menggunakan <b>barokahjaya@biojelan.id</b> untuk melihat tampilan akun Agen yang sudah disetujui.</p>
+
+          <div class="label-sm">Pengaturan</div>
+          <div class="prow" style="cursor:pointer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V21a2 2 0 11-4 0v-.09a1.7 1.7 0 00-1-1.55 1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.7 1.7 0 004.6 15a1.7 1.7 0 00-1.55-1H3a2 2 0 110-4h.09A1.7 1.7 0 004.6 9a1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06A1.7 1.7 0 009 4.6a1.7 1.7 0 001-1.55V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.55 1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06A1.7 1.7 0 0019 9c.14.36.4.66.75.86.35.2.75.28 1.16.23"/></svg><div><div class="k">Preferensi</div><div class="v">Notifikasi, bahasa</div></div><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+          <div class="prow" style="cursor:pointer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div><div class="k">Bantuan</div><div class="v">Pusat bantuan BioJelan</div></div><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+        <div class="logout" onclick="showScreen('auth-out')">Keluar akun</div>
+      </div>
+    </section>
+
+    <!-- ===================== KLIEN: AGENT DETAIL ===================== -->
+    <section class="screen" id="screen-klien-agent-detail">
+      <div class="content">
+        <div class="subheader"><div class="backbtn" onclick="goSub(lastMainScreen)"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div><h2>Profil Agen</h2></div>
+        <div class="mapcard" style="margin-top:14px; height:100px;"><div class="pin" style="top:36px; left:170px;"><svg viewBox="0 0 24 24" fill="var(--primary)"><path d="M12 2C8 2 5 5 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-4-3-7-7-7z"/></svg></div></div>
+        <div class="driver-card" style="margin-top:14px;">
+          <div class="agent-avatar" id="adAvatar" style="width:48px;height:48px;font-size:16px;">BJ</div>
+          <div style="flex:1"><h3 id="adName" style="margin:0 0 3px;font-size:15.5px;font-weight:800;">Agen Barokah Jaya</h3><div class="agent-meta" id="adMeta" style="font-size:11.5px;">&middot; Buka &middot; 350 m</div></div>
+        </div>
+        <div class="info-grid">
+          <div class="info-item"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><div><div class="k">Alamat</div><div class="v" id="adAddress">Jl. Merdeka No. 12, Kotabumi</div></div></div>
+          <div class="info-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><div><div class="k">Jam operasional</div><div class="v" id="adHours">08.00 – 17.00 WIB, Senin–Sabtu</div></div></div>
+          <div class="info-item"><svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg><div><div class="k">Harga berlaku</div><div class="v mono">Rp 6.500 / liter <span style="color:var(--muted); font-weight:600;">(sama semua Agen)</span></div></div></div>
+        </div>
+        <div class="action-area">
+          <button class="btn btn-outline" onclick="goSub('locator')">Lihat di peta</button>
+          <button class="btn btn-primary" onclick="handlePickupRequest()">Jemput ke rumah</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== AGEN: HOME ===================== -->
+    <section class="screen" id="screen-agen-home">
+      <div class="content">
+        <div class="hello row">
+          <div>
+            <p class="eyebrow">Agen</p>
+            <h2>Barokah Jaya</h2>
+          </div>
+          <div class="status-toggle" id="statusToggle" onclick="toggleStatus()">
+            <div class="knob"></div>
+            <span id="statusLabel">Buka</span>
+          </div>
+        </div>
+
+        <div class="cash-note" id="agenPayBanner" style="display:none; cursor:pointer;" onclick="openAgenPayConfirmSheet()">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          <span>Driver <b id="agenPayDriverName">Ahmad Fauzi</b> baru saja lapor bayar tunai <b class="mono" id="agenPayAmount">Rp 3.510.000</b> untuk pickup hari ini. Ketuk untuk konfirmasi penerimaan.</span>
+        </div>
+
+        <div class="price-band">
+          <div class="drop-gauge">
+            <svg viewBox="0 0 100 124">
+              <defs><linearGradient id="dropfill1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E9BA55"/><stop offset="100%" stop-color="#A8701D"/></linearGradient></defs>
+              <path d="M50 4 C24 40 10 64 10 82 C10 105 28 120 50 120 C72 120 90 105 90 82 C90 64 76 40 50 4 Z" fill="url(#dropfill1)"/>
+            </svg>
+          </div>
+          <div class="price-info">
+            <p class="label">Harga aktif dari Kilang</p>
+            <p class="amount">Rp 6.500<span>/liter</span></p>
+            <p class="updated">Diperbarui 07.00 &middot; berlaku untuk transaksi hari ini</p>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card"><div class="n">6</div><div class="l">Transaksi hari ini</div></div>
+          <div class="stat-card"><div class="n">42 L</div><div class="l">Liter terkumpul</div></div>
+          <div class="stat-card"><div class="n mono" style="font-size:14px">Rp 273rb</div><div class="l">Nilai hari ini</div></div>
+        </div>
+
+        <div class="stock-card">
+          <div class="stock-mini-gauge">
+            <svg viewBox="0 0 60 74">
+              <defs><clipPath id="fillclip1"><rect x="0" y="15" width="60" height="59"/></clipPath></defs>
+              <path d="M30 2 C14 24 6 38 6 49 C6 63 17 72 30 72 C43 72 54 63 54 49 C54 38 46 24 30 2 Z" fill="none" stroke="var(--line)" stroke-width="3"/>
+              <path d="M30 2 C14 24 6 38 6 49 C6 63 17 72 30 72 C43 72 54 63 54 49 C54 38 46 24 30 2 Z" fill="var(--primary)" clip-path="url(#fillclip1)"/>
+            </svg>
+          </div>
+          <div class="stock-body">
+            <div class="row1"><h4>Stok saat ini</h4><span class="chip chip-open">Siap Pickup</span></div>
+            <div class="sub">620 L &middot; Ambang batas 500 L</div>
+            <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+          </div>
+        </div>
+
+        <div class="cta-row">
+          <button class="btn btn-primary" onclick="openTxSheet()">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#EFF6EF" stroke-width="2.3"><path d="M12 5v14M5 12h14"/></svg>
+            Input Transaksi Baru
+          </button>
+        </div>
+
+        <div class="section-head">
+          <h3>Aktivitas terbaru</h3>
+          <a onclick="showScreen('transaksi')">Lihat semua</a>
+        </div>
+        <div class="tx-list" style="padding-bottom:8px">
+          <div class="tx-row" onclick="showScreen('transaksi')">
+            <div class="tx-avatar">RW</div>
+            <div class="tx-mid"><h4>Rini Wulandari</h4><div class="d">10.42 &middot; 6 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 39.000</div><div class="st ok">Tercatat</div></div>
+          </div>
+          <div class="tx-row" onclick="showScreen('transaksi')">
+            <div class="tx-avatar">DP</div>
+            <div class="tx-mid"><h4>Dedi Prasetyo</h4><div class="d">09.15 &middot; 10 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 65.000</div><div class="st ok">Tercatat</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== AGEN: TRANSAKSI ===================== -->
+    <section class="screen" id="screen-agen-transaksi">
+      <div class="content">
+        <div class="topbar">
+          <h2>Transaksi</h2>
+          <div class="iconbtn" onclick="showToast('Filter transaksi')"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div>
+        </div>
+        <div class="summary-strip">
+          <div class="sum-card"><div class="n" id="sumCount">6</div><div class="l">Hari ini</div></div>
+          <div class="sum-card"><div class="n" id="sumVol">42 L</div><div class="l">Volume</div></div>
+          <div class="sum-card"><div class="n mono" style="font-size:14px" id="sumTotal">Rp 273rb</div><div class="l">Total</div></div>
+        </div>
+        <div class="tx-list" id="txListFull">
+          <div class="tx-row" onclick="openTxDetail(this)" data-id="tx-1" data-name="Rini Wulandari" data-phone="0812-3456-7890" data-guest="false" data-time="Hari ini, 10.42" data-vol="6 L" data-total="Rp 39.000" data-day="today" data-status="ok">
+            <div class="tx-avatar">RW</div>
+            <div class="tx-mid"><h4>Rini Wulandari</h4><div class="d">Hari ini, 10.42 &middot; 6 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 39.000</div><div class="st ok">Tercatat</div><div class="cancel-hint"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>Bisa diajukan komplain</div></div>
+            <svg class="tx-chev" viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="tx-row" onclick="openTxDetail(this)" data-id="tx-2" data-name="Dedi Prasetyo" data-phone="0813-9988-2211" data-guest="false" data-time="Hari ini, 09.15" data-vol="10 L" data-total="Rp 65.000" data-day="today" data-status="ok">
+            <div class="tx-avatar">DP</div>
+            <div class="tx-mid"><h4>Dedi Prasetyo</h4><div class="d">Hari ini, 09.15 &middot; 10 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 65.000</div><div class="st ok">Tercatat</div><div class="cancel-hint"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>Bisa diajukan komplain</div></div>
+            <svg class="tx-chev" viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="tx-row" onclick="openTxDetail(this)" data-id="tx-3" data-name="Sutrisno" data-phone="0857-1122-3344" data-guest="true" data-time="Hari ini, 08.50" data-vol="4 L" data-total="Rp 26.000" data-day="today" data-status="ok">
+            <div class="tx-avatar">SU</div>
+            <div class="tx-mid"><h4>Sutrisno <span class="chip chip-todo" style="font-size:9.5px; padding:2px 8px; vertical-align:middle;">Tamu</span></h4><div class="d">Hari ini, 08.50 &middot; 4 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 26.000</div><div class="st ok">Tercatat</div><div class="cancel-hint"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>Bisa diajukan komplain</div></div>
+            <svg class="tx-chev" viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="tx-row" onclick="openTxDetail(this)" data-id="tx-4" data-name="Nia Fitriani" data-phone="0821-4455-6677" data-guest="false" data-time="Kemarin, 16.20" data-vol="5 L" data-total="Rp 32.500" data-day="past" data-status="cancelled" data-reason="Transaksi tercatat dobel">
+            <div class="tx-avatar cancel">NF</div>
+            <div class="tx-mid"><h4>Nia Fitriani</h4><div class="d">Kemarin, 16.20 &middot; 5 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 32.500</div><div class="st no">Dibatalkan</div></div>
+            <svg class="tx-chev" viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="tx-row" onclick="openTxDetail(this)" data-id="tx-5" data-name="Bambang Santoso" data-phone="0838-7766-5544" data-guest="false" data-time="Kemarin, 14.05" data-vol="12 L" data-total="Rp 75.600" data-day="past" data-status="ok">
+            <div class="tx-avatar">BS</div>
+            <div class="tx-mid"><h4>Bambang Santoso</h4><div class="d">Kemarin, 14.05 &middot; 12 L</div></div>
+            <div class="tx-right"><div class="amt">Rp 75.600</div><div class="st ok">Selesai</div></div>
+            <svg class="tx-chev" viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+        <div class="fab" onclick="openTxSheet()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>
+      </div>
+    </section>
+
+    <!-- ===================== AGEN: STOK ===================== -->
+    <section class="screen" id="screen-agen-stok">
+      <div class="content">
+        <div class="topbar"><h2>Stok Minyak</h2>
+          <div class="iconbtn" onclick="showToast('Riwayat lengkap pergerakan stok')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg></div>
+        </div>
+
+        <div class="gauge-big-wrap">
+          <div class="gauge-big">
+            <svg viewBox="0 0 100 124">
+              <defs><clipPath id="fillclipbig"><rect x="0" y="20" width="100" height="104"/></clipPath></defs>
+              <path d="M50 4 C24 40 10 64 10 82 C10 105 28 120 50 120 C72 120 90 105 90 82 C90 64 76 40 50 4 Z" fill="var(--paper)" stroke="var(--line)" stroke-width="3"/>
+              <path d="M50 4 C24 40 10 64 10 82 C10 105 28 120 50 120 C72 120 90 105 90 82 C90 64 76 40 50 4 Z" fill="var(--primary)" clip-path="url(#fillclipbig)" opacity="0.92"/>
+            </svg>
+          </div>
+          <div class="gauge-label">
+            <div class="n">620 L</div>
+            <div class="l">dari ambang batas 500 L</div>
+          </div>
+          <div class="threshold-note"><span class="chip chip-open"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>Sudah lewati ambang &middot; menunggu jadwal Kilang</span></div>
+        </div>
+
+        <div class="section-head"><h3>Riwayat pergerakan stok</h3></div>
+        <div class="stock-history" id="stockHistory">
+          <div class="stock-hrow"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div class="k">Transaksi — Rini Wulandari</div><div><div class="v">+6 L</div><div class="t" style="text-align:right">10.42</div></div></div>
+          <div class="stock-hrow"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div class="k">Transaksi — Dedi Prasetyo</div><div><div class="v">+10 L</div><div class="t" style="text-align:right">09.15</div></div></div>
+          <div class="stock-hrow"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><div class="k">Transaksi — Ahmad Solihin</div><div><div class="v">+4 L</div><div class="t" style="text-align:right">08.50</div></div></div>
+          <div class="stock-hrow" style="opacity:.7"><svg viewBox="0 0 24 24" stroke="var(--rust)"><path d="M6 6l12 12M18 6L6 18"/></svg><div class="k">Transaksi dibatalkan — Nia Fitriani</div><div><div class="v" style="color:var(--rust)">0 L</div><div class="t" style="text-align:right">Kemarin</div></div></div>
+        </div>
+
+        <div class="issue-link" onclick="showToast('Fitur koreksi stok belum tersedia — hubungi Kilang untuk perbaikan catatan.')">
+          Ada selisih catatan stok? Laporkan di sini
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== AGEN: PICKUP ===================== -->
+    <section class="screen" id="screen-agen-pickup">
+      <div class="content">
+        <div class="topbar"><h2>Info Pickup</h2><div></div></div>
+
+        <div class="pickup-hero">
+          <div class="top-row"><div class="pid">ID Pickup <span>PU-20260811-06</span></div><span class="chip chip-open">Scheduled</span></div>
+          <div class="stepper">
+            <div class="step done"><div class="circ">✓</div><div class="lbl">Waiting</div></div>
+            <div class="step now"><div class="circ">2</div><div class="lbl">Scheduled</div></div>
+            <div class="step"><div class="circ">3</div><div class="lbl">Assigned</div></div>
+            <div class="step"><div class="circ">4</div><div class="lbl">In Progress</div></div>
+            <div class="step"><div class="circ">5</div><div class="lbl">Completed</div></div>
+          </div>
+        </div>
+
+        <div class="driver-card">
+          <div class="driver-avatar">AF</div>
+          <div><h4>Ahmad Fauzi</h4><div class="sub">Driver &middot; L 1234 AB &middot; Menunggu penugasan akhir</div></div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><div><div class="k">Jadwal pickup</div><div class="v">Besok, 12 Agu 2026 &middot; mulai 08.00 WIB</div></div></div>
+          <div class="info-item"><svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg><div><div class="k">Estimasi volume diambil</div><div class="v">620 L dari lokasi Anda</div></div></div>
+          <div class="info-item"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><div><div class="k">Rute</div><div class="v">1 dari 3 Agen dalam perjalanan ini</div></div></div>
+        </div>
+
+        <div class="section-head"><h3>Agen dalam satu rute</h3></div>
+        <div class="route-agents">
+          <div class="route-agent"><div class="num">1</div><div class="nm">Agen Barokah Jaya (Anda)</div><div class="st">620 L</div></div>
+          <div class="route-agent"><div class="num">2</div><div class="nm">Agen Sumber Rezeki</div><div class="st">540 L</div></div>
+          <div class="route-agent"><div class="num">3</div><div class="nm">Agen Tunas Asri</div><div class="st">510 L</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== AGEN: PROFIL ===================== -->
+    <section class="screen" id="screen-agen-profil">
+      <div class="content">
+        <div class="profile-top">
+          <div class="avatar-big">BJ</div>
+          <h3>Agen Barokah Jaya</h3>
+          <div class="sub">Pemilik: Pak Joko &middot; Mitra sejak Feb 2026</div>
+        </div>
+        <div class="profile-block">
+          <div class="label-sm">Data Agen</div>
+          <div class="prow"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><div><div class="k">Alamat</div><div class="v">Jl. Merdeka No. 12, Kotabumi</div></div></div>
+          <div class="prow"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><div><div class="k">Jam operasional</div><div class="v">08.00 – 17.00 WIB, Senin–Sabtu</div></div></div>
+          <div class="prow"><svg viewBox="0 0 24 24"><path d="M4 5c0 8 7 15 15 15l2-4-5-2-2 2c-2-1-4-3-5-5l2-2-2-5z"/></svg><div><div class="k">No. telepon</div><div class="v">0813-9988-0021</div></div></div>
+
+          <div class="label-sm">Pengaturan</div>
+          <div class="prow" style="cursor:pointer"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg><div><div class="k">Ambang batas stok</div><div class="v">500 L &middot; ditentukan Kilang</div></div></div>
+          <div class="prow" style="cursor:pointer"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div><div class="k">Bantuan</div><div class="v">Pusat bantuan BioJelan</div></div><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+        <div class="logout" onclick="showScreen('auth-out')">Keluar akun</div>
+      </div>
+    </section>
+
+    <!-- ===================== DRIVER: ROUTE / HOME ===================== -->
+    <section class="screen" id="screen-driver-route">
+      <div class="content">
+        <div class="hello">
+          <p class="eyebrow">Selamat pagi</p>
+          <h2>Ahmad Fauzi</h2>
+          <div class="veh">Kendaraan L 1234 AB</div>
+        </div>
+
+        <div class="notif-banner" id="newTaskBanner">
+          <div class="notif-icon"><svg viewBox="0 0 24 24"><path d="M4 11a8 8 0 0116 0M7 11a5 5 0 0110 0M12 11v9M9 20h6"/></svg></div>
+          <div class="notif-body">
+            <h4>Tugas baru ditugaskan</h4>
+            <p>Rute <b class="mono">PU-20260811-06</b> &middot; 3 Agen &middot; est. 1.670 L</p>
+          </div>
+          <div class="notif-close" onclick="dismissNewTaskBanner()"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+        </div>
+
+        <div class="gps-badge"><div class="gps-dot"></div><span>Status checkpoint terkirim ke Kilang setiap Anda melakukan pembaruan</span></div>
+        <div class="cash-note" style="margin:14px 22px 0;">
+          <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/></svg>
+          <span>Uang tunai dari Finance: <b class="mono">Rp 3.750.000</b> sudah diterima sebelum berangkat, untuk dibayarkan kepada Agen yang memilih metode tunai.</span>
+        </div>
+
+        <div class="route-summary">
+          <div class="pid">ID Rute <span class="mono">PU-20260811-06</span></div>
+          <h3>Rute hari ini &middot; 3 Agen</h3>
+          <div class="rs-stats">
+            <div><div class="n">1.670 L</div><div class="l">Est. volume</div></div>
+            <div><div class="n">8,4 km</div><div class="l">Jarak</div></div>
+            <div><div class="n">10.30</div><div class="l">Est. selesai</div></div>
+          </div>
+        </div>
+
+        <div class="mapcard">
+          <div class="rpin p1"><div class="pin-num" style="background:var(--primary)">1</div></div>
+          <div class="rpin p2"><div class="pin-num" style="background:var(--amber-deep)">2</div></div>
+          <div class="rpin p3"><div class="pin-num" style="background:var(--muted)">3</div></div>
+        </div>
+
+        <div class="section-head"><h3>Urutan kunjungan</h3></div>
+        <div class="stop-list" id="stopList"></div>
+      </div>
+    </section>
+
+    <!-- ===================== DRIVER: STOP DETAIL ===================== -->
+    <section class="screen" id="screen-driver-stop">
+      <div class="content">
+        <div class="subheader">
+          <div class="backbtn" onclick="showScreen('route')"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></div>
+          <h2 id="sdOrderLabel">Stop 2</h2>
+        </div>
+
+        <div class="stop-hero">
+          <div class="stop-avatar" id="sdAvatar">SR</div>
+          <div style="flex:1"><h3 id="sdName">Agen Sumber Rezeki</h3><div class="sub" id="sdAddress">Jl. Kenanga No. 5, Kotabumi</div></div>
+          <div class="callbtn" onclick="showToast('Hubungi Agen via telepon/WA')"><svg viewBox="0 0 24 24"><path d="M4 5c0 8 7 15 15 15l2-4-5-2-2 2c-2-1-4-3-5-5l2-2-2-5z"/></svg></div>
+        </div>
+
+        <div class="stepper pad" id="sdStepper"></div>
+
+        <div class="info-grid">
+          <div class="info-item"><svg viewBox="0 0 24 24"><path d="M12 2C8 8 4 12.2 4 16a8 8 0 0016 0c0-3.8-4-8-8-14z"/></svg><div style="flex:1"><div class="k" id="sdVolLabel">Estimasi volume</div><div class="v" id="sdVol">540 L</div><div class="lock-note" id="sdVolLock" style="display:none" onclick="showToast('Permintaan revisi volume dikirim ke Manajer Operasional')"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="9" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>Terkunci — ajukan revisi ke Manajer</div></div></div>
+          <div class="info-item"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><div><div class="k">Jarak dari stop sebelumnya</div><div class="v" id="sdDist">3,1 km</div></div></div>
+        </div>
+
+        <div id="sdProofWrap"></div>
+
+        <div class="action-area">
+          <button class="btn btn-primary" id="sdActionBtn" onclick="advanceStatus()">Mulai Perjalanan</button>
+          <div class="skip-link" id="sdSkipLink" onclick="openSkipSheet()">Agen tutup / tidak merespon — lewati stop ini</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DRIVER: RIWAYAT ===================== -->
+    <section class="screen" id="screen-driver-riwayat">
+      <div class="content">
+        <div class="topbar"><h2>Riwayat Rute</h2><div></div></div>
+        <div class="hist-card">
+          <div class="top"><h4>Rute PU-20260810-04</h4><span class="date">10 Agu 2026</span></div>
+          <div class="hist-mini"><span><b>3</b> Agen</span><span><b>1.480 L</b> terkumpul</span><span><b>2j 10m</b> durasi</span></div>
+        </div>
+        <div class="hist-card">
+          <div class="top"><h4>Rute PU-20260809-02</h4><span class="date">9 Agu 2026</span></div>
+          <div class="hist-mini"><span><b>2</b> Agen</span><span><b>960 L</b> terkumpul</span><span><b>1j 25m</b> durasi</span></div>
+        </div>
+        <div class="hist-card">
+          <div class="top"><h4>Rute PU-20260807-05</h4><span class="date">7 Agu 2026</span></div>
+          <div class="hist-mini"><span><b>4</b> Agen</span><span><b>2.140 L</b> terkumpul</span><span><b>3j 05m</b> durasi</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DRIVER: PROFIL ===================== -->
+    <section class="screen" id="screen-driver-profil">
+      <div class="content">
+        <div class="profile-top">
+          <div class="avatar-big">AF</div>
+          <h3>Ahmad Fauzi</h3>
+          <div class="sub">Driver &middot; Bergabung Jan 2026</div>
+        </div>
+        <div class="profile-block">
+          <div class="label-sm">Data Driver</div>
+          <div class="prow"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="13" height="8" rx="1.5"/><path d="M16 12h3l2 3v2h-5z"/><circle cx="7.5" cy="19.5" r="1.5"/><circle cx="17.5" cy="19.5" r="1.5"/></svg><div><div class="k">Kendaraan</div><div class="v">L 1234 AB &middot; Pickup Truck</div></div></div>
+          <div class="prow"><svg viewBox="0 0 24 24"><path d="M4 5c0 8 7 15 15 15l2-4-5-2-2 2c-2-1-4-3-5-5l2-2-2-5z"/></svg><div><div class="k">No. telepon</div><div class="v">0821-5566-7788</div></div></div>
+          <div class="prow"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><div><div class="k">Update lokasi</div><div class="v">Checkpoint per Agen (bukan GPS terus-menerus)</div></div><span class="toggle-pill">Wajib</span></div>
+        </div>
+        <div class="logout" onclick="showScreen('auth-out')">Keluar akun</div>
+      </div>
+    </section>
+
+    <!-- ===================== KLIEN: TX DETAIL MODAL ===================== -->
+    <div class="modal-overlay" id="txModal">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <h3>Detail Transaksi</h3>
+          <div class="sheet-close" onclick="closeSheet('txModal')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+        </div>
+        <div class="detail-row"><span class="k">ID Transaksi</span><span class="v mono" id="mId"></span></div>
+        <div class="detail-row"><span class="k">Tanggal</span><span class="v" id="mDate"></span></div>
+        <div class="detail-row"><span class="k">Agen</span><span class="v" id="mAgent"></span></div>
+        <div class="detail-row"><span class="k">Volume</span><span class="v mono" id="mVol"></span></div>
+        <div class="detail-row"><span class="k">Harga satuan</span><span class="v mono" id="mPrice"></span></div>
+        <div class="detail-row"><span class="k">Total</span><span class="v mono" id="mTotal"></span></div>
+        <div class="detail-row"><span class="k">Status</span><span class="v" id="mStatus"></span></div>
+      </div>
+    </div>
+
+    <!-- ===================== KLIEN: GUEST UPSELL MODAL ===================== -->
+    <div class="modal-overlay" id="guestModal">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <h3>Perlu akun BioJelan</h3>
+          <div class="sheet-close" onclick="closeGuestModal()"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+        </div>
+        <p style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0 0 18px;">Sebagai tamu, Anda hanya dapat melihat lokasi Agen di peta dan harga jelantah terkini. Daftar terlebih dahulu untuk mulai menjual minyak jelantah, melihat riwayat transaksi, dan mengatur profil.</p>
+        <button class="btn btn-primary" onclick="exitGuestToRegister()">Daftar Sekarang</button>
+        <button class="btn btn-ghost" style="margin-top:10px" onclick="closeGuestModal()">Nanti dulu</button>
+      </div>
+    </div>
+
+    <!-- ===================== KLIEN: UPGRADE KE AGEN SHEET (baru) ===================== -->
+    <div class="modal-overlay" id="upgradeAgenSheet">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h3>Upgrade ke Agen</h3><div class="sheet-close" onclick="closeSheet('upgradeAgenSheet')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+        <p style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:0 0 18px;">Menjadi Agen BioJelan — membeli minyak jelantah dari Klien di sekitar Anda dan menjualnya ke Kilang. Isi data usaha di bawah, tim Kilang akan meninjau sebelum akun Anda aktif sebagai Agen.</p>
+        <div class="field"><label>Nama usaha / Agen</label><input type="text" id="uaName" placeholder="cth. Agen Berkah Jaya"></div>
+        <div class="field"><label>Alamat lengkap</label><input type="text" id="uaAddress" placeholder="Jl. ..., Kotabumi"></div>
+        <div class="field"><label>Link Google Maps</label><input type="url" id="uaMapsLink" placeholder="https://maps.app.goo.gl/..."><div class="hint">Buka Google Maps di lokasi usaha, ketuk "Bagikan", lalu tempel link-nya di sini.</div></div>
+        <div class="field"><label>No. telepon usaha</label><input type="text" id="uaPhone" placeholder="08xx-xxxx-xxxx"></div>
+        <div class="camera-box" id="uaCamera" onclick="uaTakePhoto()">
+          <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+          <span id="uaCameraLabel">Foto 5 dirigen kosong + banner BioJelan</span>
+        </div>
+        <p style="font-size:10.5px; color:var(--muted); margin:-12px 0 16px; text-align:center;">Dirigen dan banner dipinjamkan Kilang setelah disetujui — foto ini untuk verifikasi kesiapan lokasi.</p>
+        <button class="btn btn-primary" onclick="submitUpgradeAgen()">Ajukan Upgrade ke Agen</button>
+      </div>
+    </div>
+
+    <!-- ===================== AGEN: DETAIL TRANSAKSI / AJUKAN PEMBATALAN SHEET ===================== -->
+    <div class="modal-overlay" id="txDetailSheet">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h3>Detail Transaksi</h3><div class="sheet-close" onclick="closeSheet('txDetailSheet')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+
+        <div class="tx-detail-top" style="display:flex; align-items:center; gap:13px; margin-bottom:18px;">
+          <div class="tx-avatar" id="tdAvatar" style="width:46px;height:46px;font-size:15px;">RW</div>
+          <div><h4 id="tdName" style="margin:0 0 3px; font-size:15px; font-weight:800;">Rini Wulandari</h4><span id="tdMeta" style="font-size:12px; color:var(--muted); font-weight:600;">Hari ini, 10.42</span></div>
+        </div>
+
+        <div class="detail-row"><span class="k">No. Telepon</span><span class="v mono" id="tdPhone">—</span></div>
+        <div class="detail-row"><span class="k">Volume</span><span class="v mono" id="tdVol">6 L</span></div>
+        <div class="detail-row"><span class="k">Harga per liter</span><span class="v mono">Rp 6.500</span></div>
+        <div class="detail-row"><span class="k">Total dibayar tunai</span><span class="v mono" id="tdTotal">Rp 39.000</span></div>
+        <div class="detail-row"><span class="k">Status</span><span class="v" id="tdStatus">Selesai</span></div>
+
+        <div id="tdCancelBlock" style="display:none;">
+          <div class="field" style="margin-top:14px;"><label>Alasan komplain</label><input type="text" id="tdReason" placeholder="cth. Transaksi tercatat dobel, atau salah input volume"></div>
+          <button class="btn btn-rust" onclick="confirmCancelTx()">Ajukan Komplain ke Kilang</button>
+          <p style="font-size:11px; color:var(--muted); margin:8px 0 0; line-height:1.5;">Kilang akan meninjau komplain ini dan menentukan apakah transaksi perlu dibatalkan.</p>
+        </div>
+
+        <div id="tdLockedNote" class="note-mini" style="display:none;">
+          <svg viewBox="0 0 24 24" width="15" height="15" style="stroke:var(--muted); fill:none; stroke-width:2; flex:0 0 auto; margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+          <span>Transaksi dari hari sebelumnya sudah tidak bisa dikomplain lewat app — kalau ada kesalahan pencatatan, hubungi Kilang.</span>
+        </div>
+        <div id="tdPendingNote" class="note-mini" style="display:none; background:var(--amber-tint); color:#6b4a14;">
+          <svg viewBox="0 0 24 24" width="15" height="15" style="stroke:var(--amber-deep); fill:none; stroke-width:2; flex:0 0 auto; margin-top:1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+          <span id="tdPendingReason">Sedang ditinjau Kilang.</span>
+        </div>
+        <div id="tdCancelledNote" class="note-mini rust" style="display:none;">
+          <svg viewBox="0 0 24 24" width="15" height="15" style="stroke:var(--rust); fill:none; stroke-width:2; flex:0 0 auto; margin-top:1px;"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          <span id="tdCancelledReason">Transaksi ini sudah dibatalkan.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== AGEN: KONFIRMASI PEMBAYARAN TUNAI DARI DRIVER ===================== -->
+    <div class="modal-overlay" id="agenPayConfirmSheet">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h3>Konfirmasi Pembayaran Tunai</h3><div class="sheet-close" onclick="closeSheet('agenPayConfirmSheet')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+        <p style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin:0 0 16px;">Driver <b id="apDriverName">Ahmad Fauzi</b> melaporkan sudah membayar tunai untuk pickup minyak jelantah hari ini. Konfirmasi kalau uangnya sudah benar-benar Anda terima.</p>
+        <div class="total-preview" style="margin-bottom:18px;"><span class="k">Jumlah diterima</span><span class="v" id="apAmount">Rp 3.510.000</span></div>
+        <div class="qc-toggle" style="margin-bottom:6px;">
+          <div class="qc-opt" id="apYesOpt" onclick="setAgenPayConfirm(true)">
+            <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            <span>Ya, Sudah Diterima</span>
+          </div>
+          <div class="qc-opt" id="apNoOpt" onclick="setAgenPayConfirm(false)">
+            <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <span>Belum / Ada Masalah</span>
+          </div>
+        </div>
+        <p style="font-size:11px; color:var(--muted); margin:-2px 0 16px; line-height:1.5;">Kalau pilih "Belum / Ada Masalah", laporan ini otomatis dikirim ke Kilang sebagai sengketa pembayaran.</p>
+        <button class="btn btn-primary" id="apConfirmBtn" onclick="confirmAgenPayment()" disabled>Kirim Konfirmasi</button>
+      </div>
+    </div>
+
+    <!-- ===================== AGEN: INPUT TRANSAKSI SHEET ===================== -->
+    <div class="modal-overlay" id="txSheet">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h3>Input Transaksi Baru</h3><div class="sheet-close" onclick="closeSheet('txSheet')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+
+        <div class="pay-tabs">
+          <div class="pay-tab active" id="txTabRegistered" onclick="setTxMode('registered')">Klien Terdaftar</div>
+          <div class="pay-tab" id="txTabGuest" onclick="setTxMode('guest')">Tamu (Belum Punya Akun)</div>
+        </div>
+
+        <div id="txRegisteredWrap">
+          <div class="field"><label>Email Klien</label><input type="email" id="txEmail" placeholder="nama@email.com"><div class="hint">Dipakai untuk mencocokkan akun Klien — nama saja tidak unik.</div></div>
+        </div>
+        <div id="txGuestWrap" style="display:none">
+          <div class="field"><label>Nama Tamu</label><input type="text" id="txGuestName" placeholder="Nama pemilik minyak"><div class="hint">Tamu belum punya akun BioJelan — dicatat pakai nama &amp; no. telepon saja.</div></div>
+        </div>
+        <div class="field"><label>No. Telepon</label><input type="tel" id="txPhone" placeholder="08xx-xxxx-xxxx"><div class="hint" id="txPhoneHint">Buat konfirmasi dan menghubungi Klien kalau perlu.</div></div>
+
+        <div class="field">
+          <label>Volume (liter)</label>
+          <input type="number" id="txVol" placeholder="Contoh: 8" oninput="calcTotal()">
+          <div class="hint">Ditimbang langsung oleh Agen di lokasi.</div>
+        </div>
+        <div class="field"><label>Harga per liter</label><input type="text" value="Rp 6.500 (dari Kilang)" readonly></div>
+        <div class="total-preview"><span class="k">Total dibayar tunai</span><span class="v" id="txTotal">Rp 0</span></div>
+        <button class="btn btn-primary" onclick="saveTx()">Simpan Transaksi</button>
+      </div>
+    </div>
+
+    <!-- ===================== DRIVER: SHEET 1 — DIRIGEN & CEK KUALITAS ===================== -->
+    <div class="modal-overlay" id="qcSheet">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h3>Hitung Dirigen &amp; Cek Kualitas</h3><div class="sheet-close" onclick="closeSheet('qcSheet')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+
+        <div class="dirigen-counter">
+          <div class="lbl">Jumlah dirigen penuh<b>1 dirigen &asymp; 10 liter</b></div>
+          <div class="ctr-controls">
+            <div class="ctr-btn" onclick="changeDirigen(-1)">−</div>
+            <div class="ctr-val" id="dirigenCount">54</div>
+            <div class="ctr-btn" onclick="changeDirigen(1)">+</div>
+          </div>
+        </div>
+        <div class="liter-preview">≈ <b id="literPreview">540 L</b> minyak jelantah</div>
+
+        <div id="belowThresholdNote" style="display:none; background:var(--rust-tint); border-radius:14px; padding:12px 13px; margin-bottom:16px;">
+          <p style="margin:0; font-size:12px; color:var(--rust); font-weight:700; line-height:1.5;">Di bawah 50 L (minimum 5 dirigen) — lewati Agen ini, tidak perlu diambil.</p>
+        </div>
+
+        <div id="qcToggleWrap">
+          <div class="qc-toggle">
+            <div class="qc-opt" id="qcGoodOpt" onclick="setQcResult('good')">
+              <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+              <span>Layak Angkut</span>
+            </div>
+            <div class="qc-opt" id="qcBadOpt" onclick="setQcResult('bad')">
+              <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+              <span>Tolak</span>
+            </div>
+          </div>
+          <p style="font-size:11px; color:var(--muted); margin:-10px 0 16px; line-height:1.5;">Cek pakai senter (visual) &amp; cium bau sebelum pilih. Kalau Tolak, minyak tidak diangkut dari Agen ini.</p>
+        </div>
+
+        <button class="btn btn-primary" id="qcConfirmBtn" onclick="confirmQc()" disabled>Konfirmasi &amp; Lanjut</button>
+      </div>
+    </div>
+
+    <!-- ===================== DRIVER: SHEET 2 — FOTO & PEMBAYARAN ===================== -->
+    <div class="modal-overlay" id="payModal">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h3>Foto Bukti &amp; Pembayaran</h3><div class="sheet-close" onclick="closeSheet('payModal')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+
+        <div class="camera-box" id="cameraBox" onclick="takePhoto()">
+          <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+          <span id="cameraLabel">Foto 5 dirigen + banner bersama Agen</span>
+        </div>
+        <p style="font-size:10.5px; color:var(--muted); margin:-12px 0 16px; text-align:center;">Otomatis distempel GPS &amp; waktu, plus tukar dirigen kosong dengan yang penuh.</p>
+
+        <div class="pay-tabs">
+          <div class="pay-tab active" id="payTabCash" onclick="setPayMethod('cash')">Tunai</div>
+          <div class="pay-tab" id="payTabTransfer" onclick="setPayMethod('transfer')">Transfer (Midtrans)</div>
+        </div>
+
+        <div id="payCashWrap">
+          <div class="cash-note">
+            <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <span>Bayarkan <b class="mono">Rp 3.510.000</b> tunai ke Agen. Setelah Anda kirim, Agen yang mengonfirmasi penerimaan lewat app mereka sendiri — bukan lewat HP Anda.</span>
+          </div>
+        </div>
+
+        <div id="payTransferWrap" style="display:none">
+          <div class="midtrans-badge">
+            <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/></svg></div>
+            <span>Transfer <b class="mono">Rp 3.510.000</b> otomatis ke rekening Agen melalui Midtrans begitu Anda mengklik "Bayar Sekarang" — tanpa memegang uang fisik.</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="payConfirmBtn" onclick="confirmPayment()">Bayar Sekarang &amp; Selesaikan Stop</button>
+      </div>
+    </div>
+
+    <!-- ===================== DRIVER: SKIP SHEET ===================== -->
+    <div class="modal-overlay" id="skipSheet">
+      <div class="modal-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h3>Lewati stop ini</h3><div class="sheet-close" onclick="closeSheet('skipSheet')"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div></div>
+        <div class="reason-opt" onclick="selectReason(this)">Agen tutup</div>
+        <div class="reason-opt" onclick="selectReason(this)">Agen tidak merespon</div>
+        <div class="reason-opt" onclick="selectReason(this)">Agen berkendala</div>
+        <div style="height:6px"></div>
+        <button class="btn btn-rust" style="width:100%; justify-content:center" onclick="confirmSkip()">Tandai dilewati &amp; lanjut ke stop berikutnya</button>
+      </div>
+    </div>
+
+
+    <div class="toast" id="toast"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg">Berhasil</span></div>
+
+    <!-- ===================== TAB BARS (role-specific, one visible at a time) ===================== -->
+    <nav class="tabbar" id="tabbar-klien">
+      <button class="tab active" data-role="klien" data-tab="home" onclick="tabTap('home')">
+        <svg viewBox="0 0 24 24"><path d="M4 11.5L12 4l8 7.5"/><path d="M6 10v9a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1v-9"/></svg>Beranda<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="klien" data-tab="locator" onclick="tabTap('locator')">
+        <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.1-7-11a7 7 0 0114 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>Cari Agen<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="klien" data-tab="history" onclick="tabTap('history')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg>Riwayat<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="klien" data-tab="profile" onclick="tabTap('profile')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4"/></svg>Profil<span class="dot"></span>
+      </button>
+    </nav>
+
+    <nav class="tabbar" id="tabbar-agen">
+      <button class="tab active" data-role="agen" data-tab="home" onclick="showScreen('home')">
+        <svg viewBox="0 0 24 24"><path d="M4 11.5L12 4l8 7.5"/><path d="M6 10v9a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1v-9"/></svg>Beranda<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="agen" data-tab="transaksi" onclick="showScreen('transaksi')">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Transaksi<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="agen" data-tab="stok" onclick="showScreen('stok')">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 14h16"/></svg>Stok<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="agen" data-tab="pickup" onclick="showScreen('pickup')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="9" width="13" height="8" rx="1.5"/><path d="M16 12h3l2 3v2h-5z"/><circle cx="7.5" cy="19.5" r="1.5"/><circle cx="17.5" cy="19.5" r="1.5"/></svg>Pickup<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="agen" data-tab="profil" onclick="showScreen('profil')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4"/></svg>Profil<span class="dot"></span>
+      </button>
+    </nav>
+
+    <nav class="tabbar" id="tabbar-driver">
+      <button class="tab active" data-role="driver" data-tab="route" onclick="showScreen('route')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="9" width="13" height="8" rx="1.5"/><path d="M16 12h3l2 3v2h-5z"/><circle cx="7.5" cy="19.5" r="1.5"/><circle cx="17.5" cy="19.5" r="1.5"/></svg>Rute<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="driver" data-tab="riwayat" onclick="showScreen('riwayat')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4l3 2"/></svg>Riwayat<span class="dot"></span>
+      </button>
+      <button class="tab" data-role="driver" data-tab="profil" onclick="showScreen('profil')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4"/></svg>Profil<span class="dot"></span>
+      </button>
+    </nav>
+
+  </div>
+</div>
+</div>
+
+<!-- ============================================================
+     DEV TOOL — role switcher untuk testing/review, BUKAN bagian
+     desain produk. Diposisikan mengambang di luar frame HP agar
+     tidak ikut terfoto saat screenshot atau share-screen layar
+     aplikasi. Dapat dihapus kapan saja sebelum handoff final.
+     ============================================================ -->
+<div class="dev-fab" id="devFab" onclick="toggleDevPanel(event)">
+  <svg viewBox="0 0 24 24"><path d="M9 3v6.5L4.5 18a1.8 1.8 0 001.6 2.6h11.8a1.8 1.8 0 001.6-2.6L15 9.5V3M9 3h6M9.5 14h5"/></svg>
+</div>
+<div class="dev-panel" id="devPanel">
+  <div class="dev-panel-head">Dev · ganti akun cepat</div>
+  <div id="devPanelList"></div>
+</div>
+
+<script>
+  /* ============================================================
+     CORE STATE
+     ============================================================ */
+  let currentMobileRole = null;   // 'klien' | 'agen' | 'driver'
+  let currentAuthMode = 'login';
+  let isGuest = false;
+  let lastMainScreen = 'home';
+  let klienAgenStatus = 'none';   // 'none' | 'pending' — Klien's upgrade-to-Agen request
+
+  const ROLE_HOME_SCREEN = { klien:'home', agen:'home', driver:'route' };
+  const DEMO_ACCOUNTS = {
+    'siti.rahayu@gmail.com': 'klien',
+    'barokahjaya@biojelan.id': 'agen',
+    'ahmad.fauzi@biojelan.id': 'driver',
+  };
+  const DEMO_META = {
+    klien:{ label:'Klien', name:'Siti Rahayu', initials:'SR', bg:'linear-gradient(155deg,var(--amber),var(--amber-deep))', email:'siti.rahayu@gmail.com' },
+    agen:{ label:'Agen', name:'Barokah Jaya', initials:'BJ', bg:'linear-gradient(155deg,var(--primary),var(--primary-deep))', email:'barokahjaya@biojelan.id' },
+    driver:{ label:'Driver', name:'Ahmad Fauzi', initials:'AF', bg:'linear-gradient(155deg,var(--steel),#2A4E63)', email:'ahmad.fauzi@biojelan.id' },
+  };
+
+  // loginAsDemo(role) dipakai dev panel (tombol mengambang di luar frame HP) untuk cepat
+  // mengganti akun saat testing/review — bukan bagian dari layar login produk.
+  function loginAsDemo(role){
+    currentMobileRole = role;
+    completeLogin();
+    closeDevPanel();
+  }
+
+  function buildDevPanel(){
+    const wrap = document.getElementById('devPanelList');
+    wrap.innerHTML = Object.keys(DEMO_META).map(role=>{
+      const m = DEMO_META[role];
+      return '<button type="button" class="dev-item" onclick="loginAsDemo(\''+role+'\')">'+m.label+'<small>'+m.name+'</small></button>';
+    }).join('') + '<button type="button" class="dev-item" onclick="doLogout(); closeDevPanel();">Keluar / layar login</button>';
+  }
+  function toggleDevPanel(e){
+    if(e) e.stopPropagation();
+    document.getElementById('devPanel').classList.toggle('open');
+  }
+  function closeDevPanel(){ document.getElementById('devPanel').classList.remove('open'); }
+  document.addEventListener('click', function(e){
+    const panel = document.getElementById('devPanel');
+    const fab = document.getElementById('devFab');
+    if(panel.classList.contains('open') && !panel.contains(e.target) && !fab.contains(e.target)) closeDevPanel();
+  });
+  document.addEventListener('DOMContentLoaded', buildDevPanel);
+
+  /* ============================================================
+     NAV / ROUTER
+     ============================================================ */
+  function showScreen(name){
+    if(name === 'auth-out'){ doLogout(); return; }
+    if(name === 'home' || name === 'locator' || name === 'history' || name === 'profile' ||
+       name === 'transaksi' || name === 'stok' || name === 'pickup' || name === 'profil' ||
+       name === 'route' || name === 'riwayat'){
+      lastMainScreen = name;
+    }
+    const id = 'screen-' + currentMobileRole + '-' + name;
+    const el = document.getElementById(id);
+    if(!el) return;
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.tab[data-role="'+currentMobileRole+'"]').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    const c = el.querySelector('.content'); if(c) c.scrollTop = 0;
+    if(currentMobileRole==='driver' && name==='route') renderStopList();
+    if(currentMobileRole==='agen' && name==='home') refreshAgenPaymentBanner();
+  }
+
+  function tabTap(name){
+    if(isGuest && name !== 'locator'){ openGuestModal(); return; }
+    showScreen(name);
+  }
+
+  function goSub(name){
+    const id = (name==='auth' || name==='otp') ? ('screen-'+name) : ('screen-'+currentMobileRole+'-'+name);
+    const el = document.getElementById(id);
+    if(!el) return;
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+    const c = el.querySelector('.content'); if(c) c.scrollTop = 0;
+  }
+
+  function showRoleShell(){
+    document.querySelectorAll('.tabbar').forEach(t=>t.classList.remove('visible'));
+    document.getElementById('tabbar-'+currentMobileRole).classList.add('visible');
+  }
+
+  function completeLogin(){
+    isGuest = false;
+    const gb = document.getElementById('guestBanner'); if(gb) gb.style.display = 'none';
+    const gp = document.getElementById('guestPriceBand'); if(gp) gp.style.display = 'none';
+    showRoleShell();
+    showScreen(ROLE_HOME_SCREEN[currentMobileRole]);
+    if(currentMobileRole === 'driver'){
+      const banner = document.getElementById('newTaskBanner'); if(banner) banner.style.display = 'flex';
+      setTimeout(()=>showToast('🔔 Tugas baru: Rute PU-20260811-06 (3 Agen) ditugaskan untuk Anda'), 600);
+    }
+  }
+
+  function dismissNewTaskBanner(){
+    const el = document.getElementById('newTaskBanner');
+    if(el) el.style.display = 'none';
+  }
+
+  function doLogout(){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-auth').classList.add('active');
+    document.querySelectorAll('.tabbar').forEach(t=>t.classList.remove('visible'));
+    document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+    isGuest = false;
+    currentMobileRole = null;
+    setAuthMode('login');
+  }
+
+  /* ============================================================
+     AUTH
+     ============================================================ */
+  function setAuthMode(mode){
+    currentAuthMode = mode;
+    const isLogin = mode === 'login';
+    document.getElementById('tabLogin').classList.toggle('active', isLogin);
+    document.getElementById('tabRegister').classList.toggle('active', !isLogin);
+    document.getElementById('fieldName').style.display = isLogin ? 'none' : 'block';
+    document.getElementById('authTitle').textContent = isLogin ? 'Masuk ke BioJelan' : 'Buat akun BioJelan';
+    document.getElementById('authSub').textContent = isLogin
+      ? 'Satu akun BioJelan untuk semua — tampilan otomatis disesuaikan dengan peran Anda.'
+      : 'Daftar sebagai Klien dulu — bisa upgrade ke Agen kapan aja dari menu Profil.';
+    document.getElementById('authSubmit').textContent = isLogin ? 'Masuk' : 'Daftar';
+    document.getElementById('forgotLink').style.display = isLogin ? 'block' : 'none';
+    document.getElementById('authFoot').innerHTML = isLogin
+      ? 'Belum punya akun? <a href="#" onclick="setAuthMode(\'register\');return false;">Daftar sekarang</a>'
+      : 'Sudah punya akun? <a href="#" onclick="setAuthMode(\'login\');return false;">Masuk</a>';
+  }
+
+  function login(e){
+    e.preventDefault();
+    if(currentAuthMode === 'register'){
+      currentMobileRole = 'klien'; // pendaftaran baru selalu mulai sebagai Klien — upgrade ke Agen lewat Profil
+      goSub('otp');
+      return false;
+    }
+    const email = (document.getElementById('authEmail').value || '').trim().toLowerCase();
+    currentMobileRole = DEMO_ACCOUNTS[email] || 'klien';
+    completeLogin();
+    return false;
+  }
+
+  function verifyOtp(){
+    completeLogin();
+  }
+
+  function viewAsGuest(){
+    currentMobileRole = 'klien';
+    isGuest = true;
+    showRoleShell();
+    showScreen('locator');
+    const gb = document.getElementById('guestBanner'); if(gb) gb.style.display = 'flex';
+    const gp = document.getElementById('guestPriceBand'); if(gp) gp.style.display = 'flex';
+  }
+
+  function openGuestModal(){ document.getElementById('guestModal').classList.add('open'); }
+  function closeGuestModal(){ document.getElementById('guestModal').classList.remove('open'); }
+  function exitGuestToRegister(){
+    closeGuestModal();
+    isGuest = false;
+    const gb = document.getElementById('guestBanner'); if(gb) gb.style.display = 'none';
+    const gp = document.getElementById('guestPriceBand'); if(gp) gp.style.display = 'none';
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-auth').classList.add('active');
+    document.querySelectorAll('.tabbar').forEach(t=>t.classList.remove('visible'));
+    setAuthMode('register');
+  }
+
+  /* ============================================================
+     SHARED SHEET / TOAST HELPERS
+     ============================================================ */
+  function openSheet(id){ document.getElementById(id).classList.add('open'); }
+  function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
+  function showToast(msg){
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(window._toastT);
+    window._toastT = setTimeout(()=>toast.classList.remove('show'), 2400);
+  }
+
+  /* ============================================================
+     KLIEN
+     ============================================================ */
+  function openAgent(from, code, name, status, distance, address, hours, isOpen){
+    lastMainScreen = from;
+    document.getElementById('adAvatar').textContent = code;
+    document.getElementById('adName').textContent = name;
+    document.getElementById('adMeta').innerHTML =
+      '<span class="drip '+(isOpen?'drip-open':'drip-closed')+'"></span> '+status+' &middot; '+distance;
+    document.getElementById('adAddress').textContent = address;
+    document.getElementById('adHours').textContent = hours;
+    goSub('agent-detail');
+  }
+
+  function openTx(id, date, agent, vol, price, total, status){
+    document.getElementById('mId').textContent = id;
+    document.getElementById('mDate').textContent = date;
+    document.getElementById('mAgent').textContent = agent;
+    document.getElementById('mVol').textContent = vol;
+    document.getElementById('mPrice').textContent = price;
+    document.getElementById('mTotal').textContent = total;
+    const st = document.getElementById('mStatus');
+    st.textContent = status;
+    st.style.color = status === 'Selesai' ? 'var(--primary)' : 'var(--rust)';
+    openSheet('txModal');
+  }
+
+  function handlePickupRequest(){
+    if(isGuest){ openGuestModal(); return; }
+    showToast('Redirect ke WhatsApp Agen untuk atur jemput ke rumah');
+  }
+
+  /* ---------- Upgrade ke Agen (baru) ---------- */
+  function openUpgradeAgenSheet(){
+    if(klienAgenStatus === 'pending'){ showToast('Pengajuan Anda masih ditinjau Kilang.'); return; }
+    document.getElementById('uaName').value = '';
+    document.getElementById('uaAddress').value = '';
+    document.getElementById('uaMapsLink').value = '';
+    document.getElementById('uaPhone').value = '';
+    const box = document.getElementById('uaCamera');
+    box.classList.remove('filled');
+    document.getElementById('uaCameraLabel').textContent = 'Foto 5 dirigen kosong + banner BioJelan';
+    box.querySelector('svg').innerHTML = '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/>';
+    openSheet('upgradeAgenSheet');
+  }
+  function uaTakePhoto(){
+    const box = document.getElementById('uaCamera');
+    box.classList.add('filled');
+    document.getElementById('uaCameraLabel').textContent = 'Foto tersimpan';
+    box.querySelector('svg').innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+  }
+  function submitUpgradeAgen(){
+    const name = document.getElementById('uaName').value.trim();
+    const addr = document.getElementById('uaAddress').value.trim();
+    const mapsLink = document.getElementById('uaMapsLink').value.trim();
+    if(!name || !addr){ showToast('Lengkapi nama usaha dan alamat dulu.'); return; }
+    if(!mapsLink){ showToast('Tempel link Google Maps lokasi usaha dulu.'); return; }
+    if(!/^https?:\/\//i.test(mapsLink)){ showToast('Link Google Maps tidak valid.'); return; }
+    klienAgenStatus = 'pending';
+    closeSheet('upgradeAgenSheet');
+    document.getElementById('upgradeAgenLabel').textContent = 'Menunggu Persetujuan Kilang';
+    document.getElementById('upgradeAgenBadge').style.display = 'inline-flex';
+    document.getElementById('upgradeAgenChev').style.display = 'none';
+    document.getElementById('upgradeAgenRow').style.cursor = 'default';
+    document.getElementById('upgradeAgenRow').onclick = null;
+    document.getElementById('upgradeAgenHint').style.display = 'block';
+    showToast('Pengajuan upgrade ke Agen dikirim ke Kilang.');
+  }
+
+  /* ============================================================
+     AGEN
+     ============================================================ */
+  function toggleStatus(){
+    const el = document.getElementById('statusToggle');
+    const lbl = document.getElementById('statusLabel');
+    const closed = el.classList.toggle('closed');
+    lbl.textContent = closed ? 'Tutup' : 'Buka';
+  }
+
+  function openTxSheet(){
+    document.getElementById('txEmail').value = '';
+    document.getElementById('txGuestName').value = '';
+    document.getElementById('txPhone').value = '';
+    document.getElementById('txVol').value = '';
+    document.getElementById('txTotal').textContent = 'Rp 0';
+    setTxMode('registered');
+    openSheet('txSheet');
+  }
+
+  let txMode = 'registered'; // 'registered' | 'guest'
+  function setTxMode(mode){
+    txMode = mode;
+    document.getElementById('txTabRegistered').classList.toggle('active', mode === 'registered');
+    document.getElementById('txTabGuest').classList.toggle('active', mode === 'guest');
+    document.getElementById('txRegisteredWrap').style.display = mode === 'registered' ? 'block' : 'none';
+    document.getElementById('txGuestWrap').style.display = mode === 'guest' ? 'block' : 'none';
+    document.getElementById('txPhoneHint').textContent = mode === 'guest'
+      ? 'Wajib diisi — satu-satunya cara menghubungi tamu karena belum punya akun.'
+      : 'Buat konfirmasi dan menghubungi Klien kalau perlu.';
+  }
+
+  let activeTxRow = null;
+  function openTxDetail(el){
+    activeTxRow = el;
+    const name = el.dataset.name;
+    const initials = name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+
+    document.getElementById('tdAvatar').textContent = initials;
+    document.getElementById('tdAvatar').className = 'tx-avatar' + (el.dataset.status === 'cancelled' ? ' cancel' : '');
+    const guestTag = el.dataset.guest === 'true' ? ' <span class="chip chip-todo" style="font-size:9.5px; padding:2px 8px; vertical-align:middle;">Tamu</span>' : '';
+    document.getElementById('tdName').innerHTML = name + guestTag;
+    document.getElementById('tdMeta').textContent = el.dataset.time;
+    document.getElementById('tdPhone').textContent = el.dataset.phone || '—';
+    document.getElementById('tdVol').textContent = el.dataset.vol;
+    document.getElementById('tdTotal').textContent = el.dataset.total;
+    document.getElementById('tdReason').value = '';
+
+    const statusEl = document.getElementById('tdStatus');
+    const cancelBlock = document.getElementById('tdCancelBlock');
+    const lockedNote = document.getElementById('tdLockedNote');
+    const pendingNote = document.getElementById('tdPendingNote');
+    const cancelledNote = document.getElementById('tdCancelledNote');
+    cancelBlock.style.display = 'none';
+    lockedNote.style.display = 'none';
+    pendingNote.style.display = 'none';
+    cancelledNote.style.display = 'none';
+
+    if(el.dataset.status === 'cancelled'){
+      statusEl.textContent = 'Dibatalkan';
+      statusEl.style.color = 'var(--rust)';
+      cancelledNote.style.display = 'flex';
+      document.getElementById('tdCancelledReason').textContent = el.dataset.reason ? ('Komplain disetujui Kilang — ' + el.dataset.reason) : 'Transaksi ini sudah dibatalkan.';
+    } else if(el.dataset.status === 'pending_cancel'){
+      statusEl.textContent = 'Dalam Peninjauan';
+      statusEl.style.color = 'var(--amber-deep)';
+      pendingNote.style.display = 'flex';
+      document.getElementById('tdPendingReason').textContent = 'Sedang ditinjau Kilang — alasan komplain: ' + (el.dataset.reason || '-');
+    } else {
+      statusEl.style.color = 'var(--primary)';
+      if(el.dataset.day === 'today'){
+        statusEl.textContent = 'Tercatat';
+        cancelBlock.style.display = 'block';
+      } else {
+        statusEl.textContent = 'Selesai';
+        lockedNote.style.display = 'flex';
+      }
+    }
+    openSheet('txDetailSheet');
+  }
+
+  function confirmCancelTx(){
+    const reason = document.getElementById('tdReason').value.trim();
+    if(!reason){ showToast('Isi alasan komplain dulu.'); return; }
+    const row = activeTxRow;
+    if(!row) return;
+
+    // Agen mengajukan komplain atas transaksi yang sudah tercatat (mis. dobel input,
+    // salah volume) — Kilang yang meninjau dan memutuskan apakah transaksi dibatalkan.
+    // Status & angka (ringkasan hari ini, stok) baru berubah kalau Kilang
+    // menyetujui komplain ini lewat BioJelan Kilang Web.
+    row.dataset.status = 'pending_cancel';
+    row.dataset.reason = reason;
+    const stEl = row.querySelector('.st');
+    stEl.textContent = 'Dalam Peninjauan';
+    stEl.classList.remove('ok', 'no');
+    stEl.classList.add('pending');
+    const hintEl = row.querySelector('.cancel-hint');
+    if(hintEl) hintEl.remove();
+
+    closeSheet('txDetailSheet');
+    showToast('Komplain transaksi ' + row.dataset.name + ' dikirim ke Kilang');
+  }
+
+  function calcTotal(){
+    const vol = parseFloat(document.getElementById('txVol').value) || 0;
+    const total = vol * 6500;
+    document.getElementById('txTotal').textContent = 'Rp ' + total.toLocaleString('id-ID');
+  }
+
+  function saveTx(){
+    const phone = document.getElementById('txPhone').value.trim();
+    if(!/^(\+62|0)8[0-9]{8,12}$/.test(phone.replace(/[\s-]/g,''))){ showToast('Masukkan no. telepon yang valid.'); return; }
+
+    let name, isGuestTx = false;
+    if(txMode === 'guest'){
+      name = document.getElementById('txGuestName').value.trim();
+      if(!name){ showToast('Isi nama tamu terlebih dahulu.'); return; }
+      isGuestTx = true;
+    } else {
+      const email = document.getElementById('txEmail').value.trim();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showToast('Masukkan email Klien yang valid.'); return; }
+      name = email; // ditampilkan apa adanya; nama asli Klien didapat dari akun saat sudah tersinkron
+    }
+
+    const vol = parseFloat(document.getElementById('txVol').value) || 0;
+    if(vol <= 0){ showToast('Isi volume terlebih dahulu.'); return; }
+    const total = vol * 6500;
+    const initials = name.replace(/[^a-zA-Z ]/g,' ').trim().split(/\s+/).map(w=>w[0]).join('').substring(0,2).toUpperCase() || 'TM';
+
+    const guestTag = isGuestTx ? ' <span class="chip chip-todo" style="font-size:9.5px; padding:2px 8px; vertical-align:middle;">Tamu</span>' : '';
+
+    const row = document.createElement('div');
+    row.className = 'tx-row';
+    row.setAttribute('onclick', 'openTxDetail(this)');
+    row.dataset.id = 'tx-new-' + Date.now();
+    row.dataset.name = name;
+    row.dataset.phone = phone;
+    row.dataset.guest = isGuestTx ? 'true' : 'false';
+    row.dataset.time = 'Baru saja';
+    row.dataset.vol = vol + ' L';
+    row.dataset.total = 'Rp ' + total.toLocaleString('id-ID');
+    row.dataset.day = 'today';
+    row.dataset.status = 'ok';
+    row.innerHTML = '<div class="tx-avatar">'+initials+'</div>'
+      + '<div class="tx-mid"><h4>'+name+guestTag+'</h4><div class="d">Baru saja &middot; '+vol+' L</div></div>'
+      + '<div class="tx-right"><div class="amt">Rp '+total.toLocaleString('id-ID')+'</div><div class="st ok">Tercatat</div><div class="cancel-hint"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>Bisa diajukan komplain</div></div>'
+      + '<svg class="tx-chev" viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>';
+    document.getElementById('txListFull').prepend(row);
+
+    closeSheet('txSheet');
+    showScreen('transaksi');
+    showToast('Transaksi '+name+' tersimpan');
+  }
+
+  /* ============================================================
+     DRIVER
+     ============================================================ */
+  const ORDER = ['assigned','onway','arrived','checked','awaiting_confirm','completed'];
+  const LABELS = {assigned:'Assigned', onway:'On the Way', arrived:'Arrived', checked:'Checked', awaiting_confirm:'Menunggu Konfirmasi', completed:'Completed'};
+  const ACTION_LABEL = {assigned:'Mulai Perjalanan', onway:'Saya Sudah Tiba', arrived:'Hitung Dirigen & Cek Kualitas', checked:'Foto & Selesaikan Pembayaran'};
+
+  let stops = [
+    {code:'BJ', name:'Agen Barokah Jaya', address:'Jl. Merdeka No. 12, Kotabumi', vol:'620 L', dist:'Titik awal', status:'completed'},
+    {code:'SR', name:'Agen Sumber Rezeki', address:'Jl. Kenanga No. 5, Kotabumi', vol:'540 L', dist:'3,1 km', status:'onway'},
+    {code:'TA', name:'Agen Tunas Asri', address:'Jl. Anggrek No. 9, Kotabumi', vol:'510 L', dist:'2,7 km', status:'assigned'}
+  ];
+  let activeIndex = 1;
+  let qcResult = null;
+  let payMethod = 'cash';
+  let pendingCashConfirm = null; // {stopIndex, driverName, amount} — laporan tunai yang menunggu dikonfirmasi Agen di app-nya sendiri
+  let agenPayConfirmChoice = null;
+
+  function renderStopList(){
+    const wrap = document.getElementById('stopList');
+    wrap.innerHTML = '';
+    stops.forEach((s, i)=>{
+      const isCurrent = i === activeIndex && s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'rejected';
+      const numClass = s.status === 'completed' ? 'done' : (isCurrent ? 'current' : '');
+      const rowClass = isCurrent ? 'stop-row current' : 'stop-row';
+      let chip = '<span class="chip chip-todo">Menunggu</span>';
+      if(s.status === 'completed') chip = '<span class="chip chip-done">Selesai</span>';
+      else if(s.status === 'cancelled') chip = '<span class="chip chip-skip">Dilewati</span>';
+      else if(s.status === 'rejected') chip = '<span class="chip chip-skip">Ditolak QC</span>';
+      else if(s.status === 'awaiting_confirm') chip = '<span class="chip chip-todo">Menunggu Agen</span>';
+      else if(isCurrent) chip = '<span class="chip chip-active">'+LABELS[s.status]+'</span>';
+      const numContent = s.status === 'completed' ? '&#10003;' : (i+1);
+      const row = document.createElement('div');
+      row.className = rowClass;
+      row.onclick = ()=>openStop(i);
+      row.innerHTML =
+        '<div class="stop-num '+numClass+'">'+numContent+'</div>'
+        + '<div class="stop-mid"><h4>'+s.name+'</h4><div class="d">'+s.vol+' &middot; '+s.dist+'</div></div>'
+        + chip
+        + '<svg class="stop-go" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>';
+      wrap.appendChild(row);
+    });
+  }
+
+  function openStop(i){
+    activeIndex = i;
+    const s = stops[i];
+    document.getElementById('sdOrderLabel').textContent = 'Stop ' + (i+1);
+    document.getElementById('sdAvatar').textContent = s.code;
+    document.getElementById('sdName').textContent = s.name;
+    document.getElementById('sdAddress').textContent = s.address;
+    document.getElementById('sdVol').textContent = s.vol;
+    document.getElementById('sdDist').textContent = s.dist;
+    const locked = (s.status === 'checked' || s.status === 'completed');
+    document.getElementById('sdVolLabel').textContent = locked ? 'Volume terkonfirmasi (dirigen)' : 'Estimasi volume';
+    document.getElementById('sdVolLock').style.display = locked ? 'flex' : 'none';
+    renderStepper(s.status);
+    renderAction(s);
+    showScreen('stop');
+  }
+
+  function renderStepper(status){
+    const idx = (status === 'cancelled' || status === 'rejected') ? -1 : ORDER.indexOf(status);
+    const el = document.getElementById('sdStepper');
+    el.innerHTML = '';
+    ORDER.forEach((key, i)=>{
+      const cls = i < idx ? 'done' : (i === idx ? 'now' : '');
+      const div = document.createElement('div');
+      div.className = 'step ' + cls;
+      div.innerHTML = '<div class="circ">'+(i<idx? '&#10003;' : (i+1))+'</div><div class="lbl">'+LABELS[key]+'</div>';
+      el.appendChild(div);
+    });
+  }
+
+  function renderAction(s){
+    const btn = document.getElementById('sdActionBtn');
+    const skip = document.getElementById('sdSkipLink');
+    const proofWrap = document.getElementById('sdProofWrap');
+    proofWrap.innerHTML = '';
+    if(s.status === 'completed'){
+      btn.textContent = 'Stop selesai';
+      btn.disabled = true;
+      skip.style.display = 'none';
+      proofWrap.innerHTML = '<div class="proof-thumb"><div class="ic"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><span>Foto bukti &amp; pembayaran sudah terkirim ke Kilang</span></div>';
+    } else if(s.status === 'awaiting_confirm'){
+      btn.textContent = 'Menunggu Agen Konfirmasi...';
+      btn.disabled = true;
+      skip.style.display = 'none';
+      proofWrap.innerHTML = '<div class="proof-thumb" style="border-color:var(--amber); background:var(--amber-tint);"><div class="ic" style="background:var(--amber-deep);"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div><span>Laporan tunai sudah dikirim — menunggu Agen konfirmasi di app-nya sendiri</span></div>';
+    } else if(s.status === 'cancelled'){
+      btn.textContent = 'Stop dilewati';
+      btn.disabled = true;
+      skip.style.display = 'none';
+    } else if(s.status === 'rejected'){
+      btn.textContent = 'Ditolak — kualitas tidak layak angkut';
+      btn.disabled = true;
+      skip.style.display = 'none';
+      proofWrap.innerHTML = '<div class="proof-thumb" style="border-color:var(--rust); background:var(--rust-tint);"><div class="ic" style="background:var(--rust);"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg></div><span>Minyak tidak diangkut dari Agen ini</span></div>';
+    } else {
+      btn.textContent = ACTION_LABEL[s.status];
+      btn.disabled = false;
+      skip.style.display = (s.status === 'assigned' || s.status === 'onway') ? 'block' : 'none';
+    }
+  }
+
+  function advanceStatus(){
+    const s = stops[activeIndex];
+    if(s.status === 'arrived'){
+      openQcSheet(s);
+      return;
+    }
+    if(s.status === 'checked'){
+      openSheet('payModal');
+      return;
+    }
+    const idx = ORDER.indexOf(s.status);
+    s.status = ORDER[idx+1];
+    renderStepper(s.status);
+    renderAction(s);
+    showToast('Status diperbarui: ' + LABELS[s.status]);
+  }
+
+  /* ---------- Dirigen & QC sheet ---------- */
+  // Ambang minimum pickup — dikonfigurasi Superadmin lewat Konfigurasi Sistem di app Kilang.
+  // Di prototype ini nilainya statis di sini karena belum ada backend yang menyinkronkan
+  // dua app terpisah; di implementasi asli, Driver app akan fetch nilai ini dari server.
+  const MIN_DIRIGEN = 5; // 5 dirigen = 50L
+  function openQcSheet(s){
+    const liters = parseInt(s.vol) || 540;
+    const dirigen = Math.round(liters / 10);
+    document.getElementById('dirigenCount').textContent = dirigen;
+    document.getElementById('literPreview').textContent = (dirigen*10) + ' L';
+    qcResult = null;
+    document.getElementById('qcGoodOpt').className = 'qc-opt';
+    document.getElementById('qcBadOpt').className = 'qc-opt';
+    refreshQcThreshold();
+    openSheet('qcSheet');
+  }
+  function changeDirigen(delta){
+    const el = document.getElementById('dirigenCount');
+    const val = Math.max(0, parseInt(el.textContent) + delta);
+    el.textContent = val;
+    document.getElementById('literPreview').textContent = (val*10) + ' L';
+    refreshQcThreshold();
+  }
+  function refreshQcThreshold(){
+    const dirigen = parseInt(document.getElementById('dirigenCount').textContent);
+    const belowMin = dirigen < MIN_DIRIGEN;
+    document.getElementById('belowThresholdNote').style.display = belowMin ? 'block' : 'none';
+    document.getElementById('qcToggleWrap').style.display = belowMin ? 'none' : 'block';
+    const btn = document.getElementById('qcConfirmBtn');
+    if(belowMin){
+      btn.textContent = 'Lewati Agen Ini';
+      btn.disabled = false;
+    } else {
+      btn.textContent = 'Konfirmasi & Lanjut';
+      btn.disabled = (qcResult === null);
+    }
+  }
+  function setQcResult(type){
+    qcResult = type;
+    document.getElementById('qcGoodOpt').className = 'qc-opt' + (type==='good' ? ' sel-good' : '');
+    document.getElementById('qcBadOpt').className = 'qc-opt' + (type==='bad' ? ' sel-bad' : '');
+    document.getElementById('qcConfirmBtn').disabled = false;
+  }
+  function confirmQc(){
+    const s = stops[activeIndex];
+    const dirigen = parseInt(document.getElementById('dirigenCount').textContent);
+    closeSheet('qcSheet');
+    if(dirigen < MIN_DIRIGEN){
+      s.status = 'cancelled';
+      renderAction(s);
+      showToast('Di bawah 50 L, Agen ini dilewati');
+      showScreen('route');
+      return;
+    }
+    if(qcResult === 'bad'){
+      s.status = 'rejected';
+      renderStepper(s.status);
+      renderAction(s);
+      showToast('Stop ditandai ditolak — kualitas tidak layak angkut');
+      return;
+    }
+    s.vol = (dirigen*10) + ' L';
+    s.status = 'checked';
+    document.getElementById('sdVol').textContent = s.vol;
+    document.getElementById('sdVolLabel').textContent = 'Volume terkonfirmasi (dirigen)';
+    document.getElementById('sdVolLock').style.display = 'flex';
+    renderStepper(s.status);
+    renderAction(s);
+    showToast('Kualitas lolos · lanjut ke foto & pembayaran');
+  }
+
+  /* ---------- Foto & Pembayaran sheet ---------- */
+  function takePhoto(){
+    const box = document.getElementById('cameraBox');
+    box.classList.add('filled');
+    document.getElementById('cameraLabel').textContent = 'Foto tersimpan · GPS & waktu terstempel';
+    box.querySelector('svg').innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+  }
+  function setPayMethod(method){
+    payMethod = method;
+    document.getElementById('payTabCash').classList.toggle('active', method==='cash');
+    document.getElementById('payTabTransfer').classList.toggle('active', method==='transfer');
+    document.getElementById('payCashWrap').style.display = method==='cash' ? 'block' : 'none';
+    document.getElementById('payTransferWrap').style.display = method==='transfer' ? 'block' : 'none';
+    document.getElementById('payConfirmBtn').textContent = method==='cash' ? 'Kirim ke Agen untuk Konfirmasi' : 'Bayar Sekarang & Selesaikan Stop';
+  }
+  function confirmPayment(){
+    if(!document.getElementById('cameraBox').classList.contains('filled')){
+      showToast('Ambil foto bukti dulu sebelum menyelesaikan stop');
+      return;
+    }
+    const chosenMethod = payMethod;
+    const s = stops[activeIndex];
+    const stopIndex = activeIndex;
+
+    closeSheet('payModal');
+    document.getElementById('cameraBox').classList.remove('filled');
+    document.getElementById('cameraLabel').textContent = 'Foto 5 dirigen + banner bersama Agen';
+    setPayMethod('cash');
+
+    if(chosenMethod === 'cash'){
+      s.status = 'awaiting_confirm';
+      pendingCashConfirm = { stopIndex: stopIndex, driverName: 'Ahmad Fauzi', amount: 'Rp 3.510.000' };
+      renderStepper(s.status);
+      renderAction(s);
+      renderStopList();
+      showToast('Laporan tunai terkirim — menunggu Agen konfirmasi di app-nya');
+      refreshAgenPaymentBanner();
+    } else {
+      s.status = 'completed';
+      renderStepper(s.status);
+      renderAction(s);
+      renderStopList();
+      showToast('Transfer Midtrans terkirim, laporan terkirim ke Kilang');
+      const next = stops.findIndex(st => st.status === 'assigned' || st.status === 'onway' || st.status === 'arrived' || st.status === 'checked');
+      if(next !== -1){ activeIndex = next; }
+    }
+  }
+
+  /* ---------- Konfirmasi pembayaran tunai dari sisi Agen ---------- */
+  function refreshAgenPaymentBanner(){
+    const banner = document.getElementById('agenPayBanner');
+    if(!banner) return;
+    if(pendingCashConfirm){
+      document.getElementById('agenPayDriverName').textContent = pendingCashConfirm.driverName;
+      document.getElementById('agenPayAmount').textContent = pendingCashConfirm.amount;
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+  function openAgenPayConfirmSheet(){
+    if(!pendingCashConfirm) return;
+    document.getElementById('apDriverName').textContent = pendingCashConfirm.driverName;
+    document.getElementById('apAmount').textContent = pendingCashConfirm.amount;
+    agenPayConfirmChoice = null;
+    document.getElementById('apYesOpt').className = 'qc-opt';
+    document.getElementById('apNoOpt').className = 'qc-opt';
+    document.getElementById('apConfirmBtn').disabled = true;
+    openSheet('agenPayConfirmSheet');
+  }
+  function setAgenPayConfirm(val){
+    agenPayConfirmChoice = val;
+    document.getElementById('apYesOpt').className = 'qc-opt' + (val === true ? ' sel-good' : '');
+    document.getElementById('apNoOpt').className = 'qc-opt' + (val === false ? ' sel-bad' : '');
+    document.getElementById('apConfirmBtn').disabled = false;
+  }
+  function confirmAgenPayment(){
+    if(agenPayConfirmChoice === null) return;
+    const pending = pendingCashConfirm;
+    closeSheet('agenPayConfirmSheet');
+    pendingCashConfirm = null;
+    refreshAgenPaymentBanner();
+    // Catatan prototipe: Driver & Agen berbagi satu sesi browser yang sama di sini,
+    // jadi status stop Driver langsung disinkronkan begitu Agen menekan konfirmasi.
+    // Di app KMP nanti ini lewat notifikasi/API, bukan variabel bersama seperti ini.
+    const s = pending ? stops[pending.stopIndex] : null;
+    if(agenPayConfirmChoice === true){
+      if(s) s.status = 'completed';
+      showToast('Konfirmasi terkirim — laporan pickup selesai ke Kilang');
+    } else {
+      if(s) s.status = 'checked';
+      showToast('Dilaporkan sebagai sengketa pembayaran ke Kilang');
+    }
+    if(s && document.getElementById('screen-driver-stop').classList.contains('active') && activeIndex === pending.stopIndex){
+      renderStepper(s.status);
+      renderAction(s);
+    }
+    renderStopList();
+  }
+
+  let selectedReason = null;
+  function openSkipSheet(){ openSheet('skipSheet'); }
+  function selectReason(el){
+    document.querySelectorAll('.reason-opt').forEach(o=>o.classList.remove('sel'));
+    el.classList.add('sel');
+    selectedReason = el.textContent;
+  }
+  function confirmSkip(){
+    const s = stops[activeIndex];
+    s.status = 'cancelled';
+    closeSheet('skipSheet');
+    renderAction(s);
+    showToast('Stop dilewati, lanjut ke Agen berikutnya');
+    showScreen('route');
+  }
+</script>
+</body>
+</html>
