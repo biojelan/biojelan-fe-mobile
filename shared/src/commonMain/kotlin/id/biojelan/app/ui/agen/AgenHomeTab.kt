@@ -1,5 +1,7 @@
 package id.biojelan.app.ui.agen
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +47,7 @@ import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.Drip
 import id.biojelan.app.ui.components.DropGauge
 import id.biojelan.app.ui.components.ErrorBlock
+import id.biojelan.app.ui.components.FadeInItem
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.NoteTone
 import id.biojelan.app.ui.components.PriceBand
@@ -150,17 +154,19 @@ fun AgenHomeTab(
             state.error != null && state.transactions.isEmpty() -> ErrorBlock(state.error, onRetry = vm::refresh)
             state.transactions.isEmpty() -> NoteBox(s.noTransactionsAgenHint)
             else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                state.transactions.take(3).forEach { tx ->
-                    val name = tx.counterpartName(Viewer.Agen)
-                    TxRow(
-                        avatar = initialsOf(name),
-                        title = name,
-                        subtitle = formatRelativeDateTime(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
-                        amount = formatRupiah(tx.totalPrice),
-                        statusText = tx.txStatus.label(Viewer.Agen),
-                        statusKind = tx.txStatus.chipKind(),
-                        onClick = { onGoTo(1) },
-                    )
+                state.transactions.take(3).forEachIndexed { idx, tx ->
+                    FadeInItem(idx) {
+                        val name = tx.counterpartName(Viewer.Agen)
+                        TxRow(
+                            avatar = initialsOf(name),
+                            title = name,
+                            subtitle = formatRelativeDateTime(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
+                            amount = formatRupiah(tx.totalPrice),
+                            statusText = tx.txStatus.label(Viewer.Agen),
+                            statusKind = tx.txStatus.chipKind(),
+                            onClick = { onGoTo(1) },
+                        )
+                    }
                 }
             }
         }
@@ -178,8 +184,14 @@ fun AgenHomeTab(
 private fun OpenTogglePill(isOpen: Boolean, busy: Boolean, onClick: () -> Unit) {
     val c = BioTheme.colors
     val s = BioText.current
-    val bg = if (isOpen) c.primaryTint else c.rustTint
-    val fg = if (isOpen) c.primary else c.rust
+    val bg by animateColorAsState(
+        targetValue = if (isOpen) c.primaryTint else c.rustTint,
+        animationSpec = tween(150),
+    )
+    val fg by animateColorAsState(
+        targetValue = if (isOpen) c.primary else c.rust,
+        animationSpec = tween(150),
+    )
     Row(
         Modifier
             .clip(RoundedCornerShape(50))

@@ -1,6 +1,13 @@
 package id.biojelan.app.ui.driver
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.biojelan.app.core.formatLiter
@@ -43,6 +51,7 @@ import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.ErrorBlock
+import id.biojelan.app.ui.components.FadeInItem
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.SectionHead
@@ -116,16 +125,18 @@ fun DriverHomeTab(
             state.error != null && state.transactions.isEmpty() -> ErrorBlock(state.error, onRetry = vm::refresh)
             state.transactions.isEmpty() -> NoteBox(s.driverNoTransactionsHint)
             else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                state.transactions.take(3).forEach { tx ->
-                    val agen = tx.agenName.ifBlank { "Agen" }
-                    TxRow(
-                        avatar = initialsOf(agen),
-                        title = agen,
-                        subtitle = formatRelativeDateTime(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
-                        amount = formatRupiah(tx.totalPrice),
-                        statusText = tx.txStatus.driverLabel(asAgen = false),
-                        statusKind = tx.txStatus.chipKind(),
-                    )
+                state.transactions.take(3).forEachIndexed { idx, tx ->
+                    FadeInItem(idx) {
+                        val agen = tx.agenName.ifBlank { "Agen" }
+                        TxRow(
+                            avatar = initialsOf(agen),
+                            title = agen,
+                            subtitle = formatRelativeDateTime(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
+                            amount = formatRupiah(tx.totalPrice),
+                            statusText = tx.txStatus.driverLabel(asAgen = false),
+                            statusKind = tx.txStatus.chipKind(),
+                        )
+                    }
                 }
             }
         }
@@ -239,6 +250,24 @@ private fun DriverPickupCard(
 @Composable
 private fun GpsBadge(text: String) {
     val c = BioTheme.colors
+    // Pulse animation matching HTML @keyframes pulse: scale 0.6→1.8, opacity 0.6→0
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+    )
     Row(
         Modifier
             .fillMaxWidth()
@@ -248,7 +277,18 @@ private fun GpsBadge(text: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(Modifier.size(9.dp).background(c.primary, RoundedCornerShape(50)))
+        // GPS dot with pulsing ring
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(19.dp)) {
+            // Pulsing ring behind the dot
+            Box(
+                Modifier
+                    .size(19.dp)
+                    .graphicsLayer(scaleX = pulseScale, scaleY = pulseScale, alpha = pulseAlpha)
+                    .border(2.dp, c.primary, RoundedCornerShape(50)),
+            )
+            // Static dot
+            Box(Modifier.size(9.dp).background(c.primary, RoundedCornerShape(50)))
+        }
         Text(text, style = BioTheme.type.small, color = c.inkSoft)
     }
 }
