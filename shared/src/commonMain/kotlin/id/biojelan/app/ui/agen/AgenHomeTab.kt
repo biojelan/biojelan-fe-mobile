@@ -38,9 +38,9 @@ import id.biojelan.app.data.repository.txStatus
 import id.biojelan.app.ui.Viewer
 import id.biojelan.app.ui.chipKind
 import id.biojelan.app.ui.components.BioButton
+import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.ChipKind
-import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.Drip
 import id.biojelan.app.ui.components.DropGauge
 import id.biojelan.app.ui.components.ErrorBlock
@@ -82,8 +82,6 @@ fun AgenHomeTab(
                 Text(user.name, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             OpenTogglePill(isOpen = agen?.isOpen == true, busy = state.togglingOpen, onClick = vm::toggleOpen)
-            Spacer(Modifier.padding(start = 8.dp))
-            CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload)
         }
 
         PriceBand(state.price, s.priceCaptionAgen)
@@ -166,6 +164,13 @@ fun AgenHomeTab(
                 }
             }
         }
+
+        Spacer(Modifier.height(18.dp))
+        BioButton(
+            s.reload, vm::refresh, Modifier.fillMaxWidth(),
+            style = BtnStyle.Outline,
+            icon = BioIcons.Refresh,
+        )
     }
 }
 
