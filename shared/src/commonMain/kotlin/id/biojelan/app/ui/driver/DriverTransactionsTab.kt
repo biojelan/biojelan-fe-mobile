@@ -149,7 +149,6 @@ private fun DriverTxDetailSheet(
     val uriHandler = LocalUriHandler.current
     var confirmCancel by remember { mutableStateOf(false) }
     BioSheet(s.transactionDetailTitle, onDismiss) {
-        DetailRow(s.labelTransactionId, tx.transactionId, mono = true)
         DetailRow(s.labelDate, formatDateTime(tx.createdAt))
         DetailRow(s.labelAgent, tx.agenName.ifBlank { "—" })
         DetailRow(s.labelVolume, formatLiter(tx.volumeLiter))
@@ -225,11 +224,6 @@ fun NewDriverTransactionSheet(
     }
 
     BioSheet(s.driverNewTransactionTitle, onDismiss) {
-        NoteBox(
-            s.driverNewTransactionNote,
-            icon = BioIcons.Info,
-            modifier = Modifier.padding(bottom = 16.dp),
-        )
         BioField(
             s.fieldAgenContact, contact, { contact = it },
             placeholder = s.placeholderAgenContact,

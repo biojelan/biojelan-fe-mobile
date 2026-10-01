@@ -129,7 +129,6 @@ private fun KlienTxDetailSheet(
     val s = BioText.current
     var confirmReject by remember { mutableStateOf(false) }
     BioSheet(s.transactionDetailTitle, onDismiss) {
-        DetailRow(s.labelTransactionId, tx.transactionId, mono = true)
         DetailRow(s.labelDate, formatDateTime(tx.createdAt))
         DetailRow(s.labelAgent, agenName)
         DetailRow(s.labelVolume, formatLiter(tx.volumeLiter))
