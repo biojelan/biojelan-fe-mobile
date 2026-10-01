@@ -17,7 +17,7 @@ Repo ini isinya khusus aplikasi mobile (Kotlin Multiplatform). Dua bagian lain p
 - **Koin** — dependency injection
 - **Backend**: REST API (Laravel)
 
-## Struktur Proyek
+## Project Structure
 
 ```
 shared/      Modul KMP bersama: UI, ViewModel, jaringan, sesi (dipakai Android & iOS)
@@ -26,7 +26,7 @@ iosApp/      Host aplikasi iOS (SwiftUI + ComposeUIViewController)
 API-DOC/     Dokumentasi kontrak API
 ```
 
-## Menjalankan
+## Setup
 
 **Android** — buka folder ini di Android Studio, jalankan konfigurasi `androidApp`.
 
@@ -35,7 +35,7 @@ API-DOC/     Dokumentasi kontrak API
 
 Konfigurasi seperti base URL API ada di `shared/src/commonMain/kotlin/id/biojelan/app/core/AppConfig.kt`.
 
-## Peran & Fitur
+## Role & Feature
 
 | Peran | Fitur utama |
 |---|---|
@@ -43,6 +43,6 @@ Konfigurasi seperti base URL API ada di `shared/src/commonMain/kotlin/id/biojela
 | Agen | Kelola toko & stok, terima transaksi dari Klien, kelola pengambilan oleh Driver |
 | Driver | Catat pengambilan dari Agen, rute ke lokasi Agen (Google Maps), pantau status penjemputan |
 
-## Lisensi Font
+## Font & Licenses
 
 Sora, Manrope, IBM Plex Mono (SIL Open Font License 1.1) — lihat `licenses/fonts/`.
