@@ -42,7 +42,6 @@ import id.biojelan.app.ui.components.BioButton
 import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.ChipKind
-import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.ScreenPad
@@ -61,7 +60,6 @@ fun DriverHomeTab(
     state: DriverUiState,
     name: String,
     vm: DriverViewModel,
-    onNewTransaction: () -> Unit,
     onGoTo: (Int) -> Unit,
 ) {
     val c = BioTheme.colors
@@ -76,13 +74,25 @@ fun DriverHomeTab(
                 Text(greeting() + ",", style = BioTheme.type.body, color = c.muted)
                 Text(firstName, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload)
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(state.todayCount.toString(), s.todayLabel, Modifier.weight(1f))
             StatCard(formatNumber(state.todayLiters, 1) + " L", s.volumeToday, Modifier.weight(1f))
             StatCard(formatRupiahCompact(state.todayValue), s.valueToday, Modifier.weight(1f))
+        }
+
+        // GPS badge — matches HTML .gps-badge
+        GpsBadge(s.driverGpsBadge)
+
+        // Route summary card — matches HTML .route-summary (gradient card)
+        val pickup = state.pickup
+        if (pickup != null) {
+            Spacer(Modifier.height(14.dp))
+            RouteSummaryCard(
+                pickupId = pickup.pickupId,
+                estVolume = formatNumber(state.todayLiters, 1) + " L",
+            )
         }
 
         SectionHead(s.driverPickupSection)
@@ -94,9 +104,6 @@ fun DriverHomeTab(
             onRetry = vm::refresh,
             onUpdate = vm::updatePickup,
         )
-
-        Spacer(Modifier.height(16.dp))
-        BioButton(s.driverNewTransactionTitle, onNewTransaction, Modifier.fillMaxWidth(), icon = BioIcons.Plus)
 
         SectionHead(s.recentActivity, action = s.seeAll, onAction = { onGoTo(1) })
         when {
@@ -122,6 +129,13 @@ fun DriverHomeTab(
                 }
             }
         }
+
+        Spacer(Modifier.height(18.dp))
+        BioButton(
+            s.reload, vm::refresh, Modifier.fillMaxWidth(),
+            style = BtnStyle.Outline,
+            icon = BioIcons.Refresh,
+        )
     }
 }
 
@@ -216,6 +230,68 @@ private fun DriverPickupCard(
                         loading = busy, icon = BioIcons.Check,
                     )
                 }
+            }
+        }
+    }
+}
+
+/** GPS badge — matches HTML .gps-badge: pulsing dot + checkpoint text. */
+@Composable
+private fun GpsBadge(text: String) {
+    val c = BioTheme.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+            .bioCard(14.dp)
+            .padding(horizontal = 13.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(Modifier.size(9.dp).background(c.primary, RoundedCornerShape(50)))
+        Text(text, style = BioTheme.type.small, color = c.inkSoft)
+    }
+}
+
+/**
+ * Route summary card — matches HTML .route-summary: dark gradient background with pickup ID and
+ * estimated volume, mimicking the prototype's visual style.
+ */
+@Composable
+private fun RouteSummaryCard(pickupId: String, estVolume: String) {
+    val c = BioTheme.colors
+    val s = BioText.current
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(
+                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                    colors = listOf(c.primary, c.primaryDeep),
+                ),
+                shape = RoundedCornerShape(20.dp),
+            )
+            .padding(18.dp),
+    ) {
+        Text(
+            "ID " + pickupId,
+            style = BioTheme.type.small,
+            color = c.onPrimary.copy(alpha = .75f),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            s.driverRouteToday,
+            style = BioTheme.type.headline,
+            color = c.onPrimary,
+        )
+        Spacer(Modifier.height(14.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+            Column {
+                Text(estVolume, style = BioTheme.type.display, color = c.onPrimary)
+                Text(
+                    s.driverEstVolume,
+                    style = BioTheme.type.small,
+                    color = c.onPrimary.copy(alpha = .7f),
+                )
             }
         }
     }

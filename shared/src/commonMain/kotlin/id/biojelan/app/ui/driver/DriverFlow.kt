@@ -56,7 +56,6 @@ fun DriverFlow(vm: DriverViewModel = koinViewModel(), account: AccountViewModel 
                         state = state,
                         name = user?.name.orEmpty(),
                         vm = vm,
-                        onNewTransaction = { showNew = true },
                         onGoTo = { tab = it },
                     )
                     1 -> DriverTransactionsTab(state, vm, onNewTransaction = { showNew = true })
