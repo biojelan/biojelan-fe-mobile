@@ -247,6 +247,8 @@ interface BioStrings {
     val sectionAccountData: String
     val sectionAgentData: String
     val sectionSettings: String
+    val darkMode: String
+    val darkModeHint: String
     val labelPhone: String
     val labelIdAgent: String
     val labelIdClient: String

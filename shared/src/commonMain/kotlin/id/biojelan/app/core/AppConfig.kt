@@ -36,8 +36,8 @@ object AppConfig {
      */
     const val MOCK_PICKUP_API = false
 
-    /** Mode tema default: "system" (ikut OS), "light", atau "dark". */
-    const val DEFAULT_THEME = "system"
+    /** Mode tema default: "light". Gelap hanya aktif kalau pengguna menyalakan switch di Profil. */
+    const val DEFAULT_THEME = "light"
 
     /** Kode bahasa default: "id" (Indonesia) atau "en" (English). */
     const val DEFAULT_LANGUAGE = "id"

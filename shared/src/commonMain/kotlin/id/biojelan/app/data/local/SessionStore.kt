@@ -23,7 +23,7 @@ class SessionStore(private val settings: Settings) {
             if (value == null) settings.remove(KEY_USER) else settings.putString(KEY_USER, value)
         }
 
-    /** Preferensi tema: "light", "dark", atau "system" (default). */
+    /** Preferensi tema: "light" (default) atau "dark". Nilai lain dianggap "light". */
     var themeMode: String?
         get() = settings.getStringOrNull(KEY_THEME)
         set(value) {

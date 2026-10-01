@@ -239,6 +239,8 @@ object EnStrings : BioStrings {
     override val sectionAccountData = "Account data"
     override val sectionAgentData = "Agent data"
     override val sectionSettings = "Settings"
+    override val darkMode = "Dark mode"
+    override val darkModeHint = "Darker look for low light"
     override val labelPhone = "Phone"
     override val labelIdAgent = "Agent ID"
     override val labelIdClient = "Client ID"

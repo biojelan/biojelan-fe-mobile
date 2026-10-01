@@ -20,6 +20,7 @@ import id.biojelan.app.ui.driver.DriverViewModel
 import id.biojelan.app.ui.auth.AuthViewModel
 import id.biojelan.app.ui.guest.GuestViewModel
 import id.biojelan.app.ui.klien.KlienViewModel
+import id.biojelan.app.ui.theme.ThemeController
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import kotlinx.serialization.json.Json
@@ -47,6 +48,7 @@ private val dataModule = module {
     }
     single<Settings> { Settings() }
     single { SessionStore(get()) }
+    single { ThemeController(get()) }
     single { SessionManager(get(), get()) }
     single { MockApiClient(get()) }
     single { ApiClient(get(), get(), get(), get()) }

@@ -1,6 +1,5 @@
 package id.biojelan.app
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -18,6 +17,7 @@ import id.biojelan.app.ui.guest.GuestScreen
 import id.biojelan.app.ui.klien.KlienFlow
 import id.biojelan.app.ui.strings.bioStringsFor
 import id.biojelan.app.ui.theme.BioTheme
+import id.biojelan.app.ui.theme.ThemeController
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -29,13 +29,9 @@ import org.koin.compose.viewmodel.koinViewModel
 fun App() {
     val session: SessionStore = koinInject()
 
-    // -- Theme: "system" (default), "light", atau "dark"
-    val themeMode = session.themeMode ?: AppConfig.DEFAULT_THEME
-    val darkTheme = when (themeMode) {
-        "dark" -> true
-        "light" -> false
-        else -> isSystemInDarkTheme()
-    }
+    // -- Theme: default terang; gelap hanya kalau pengguna menyalakan switch di Profil.
+    val themeController: ThemeController = koinInject()
+    val darkTheme by themeController.isDark.collectAsStateWithLifecycle()
 
     // -- Language: "id" (default) atau "en"
     val lang = session.language ?: AppConfig.DEFAULT_LANGUAGE

@@ -42,6 +42,7 @@ import id.biojelan.app.ui.components.BioButton
 import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.BioField
 import id.biojelan.app.ui.components.BioSheet
+import id.biojelan.app.ui.components.BioSwitch
 import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.FilterPill
@@ -57,6 +58,8 @@ import id.biojelan.app.ui.components.bioCard
 import id.biojelan.app.ui.icons.BioIcons
 import id.biojelan.app.ui.strings.BioText
 import id.biojelan.app.ui.theme.BioTheme
+import id.biojelan.app.ui.theme.ThemeController
+import org.koin.compose.koinInject
 
 private enum class ProfileSheet { None, Edit, Password, Delete }
 
@@ -67,6 +70,8 @@ fun ProfileTab(user: UserDto, account: AccountViewModel) {
     val s = BioText.current
     var sheet by remember { mutableStateOf(ProfileSheet.None) }
     val busy by account.busy.collectAsStateWithLifecycle()
+    val themeController: ThemeController = koinInject()
+    val isDark by themeController.isDark.collectAsStateWithLifecycle()
     val agen = user.agen
     val isDriver = user.roleId == AppConfig.ROLE_ID_DRIVER
     val roleLabel = when {
@@ -127,6 +132,12 @@ fun ProfileTab(user: UserDto, account: AccountViewModel) {
             ProfileRow(BioIcons.Edit, s.editProfile, onClick = { account.clearFormError(); sheet = ProfileSheet.Edit })
             HairLine()
             ProfileRow(BioIcons.Lock, s.changePassword, onClick = { account.clearFormError(); sheet = ProfileSheet.Password })
+            HairLine()
+            ProfileRow(
+                BioIcons.Moon, s.darkMode, value = s.darkModeHint,
+                onClick = { themeController.setDark(!isDark) },
+                trailing = { BioSwitch(checked = isDark, onCheckedChange = themeController::setDark) },
+            )
             HairLine()
             ProfileRow(BioIcons.Logout, s.logout, tint = c.rust, onClick = { if (!busy) account.logout() })
         }

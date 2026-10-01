@@ -271,6 +271,7 @@ fun ProfileRow(
     modifier: Modifier = Modifier,
     tint: Color = BioTheme.colors.primary,
     onClick: (() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val c = BioTheme.colors
     Row(
@@ -286,7 +287,8 @@ fun ProfileRow(
             Text(label, style = BioTheme.type.bodyBold, color = if (tint == c.rust) c.rust else c.ink)
             if (value != null) Text(value, style = BioTheme.type.small, color = c.muted)
         }
-        if (onClick != null) Icon(BioIcons.Chevron, contentDescription = null, tint = c.muted, modifier = Modifier.size(16.dp))
+        if (trailing != null) trailing()
+        else if (onClick != null) Icon(BioIcons.Chevron, contentDescription = null, tint = c.muted, modifier = Modifier.size(16.dp))
     }
 }
 

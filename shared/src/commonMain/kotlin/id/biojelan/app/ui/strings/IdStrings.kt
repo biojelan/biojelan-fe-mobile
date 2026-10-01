@@ -240,6 +240,8 @@ object IdStrings : BioStrings {
     override val sectionAccountData = "Data akun"
     override val sectionAgentData = "Data Agen"
     override val sectionSettings = "Pengaturan"
+    override val darkMode = "Mode gelap"
+    override val darkModeHint = "Tampilan gelap untuk malam hari"
     override val labelPhone = "Telepon"
     override val labelIdAgent = "ID Agen"
     override val labelIdClient = "ID Klien"

@@ -52,6 +52,7 @@ object BioIcons {
     val User by lazy { icon("user", "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2", "M12 3a4 4 0 1 0 0 8 4 4 0 1 0 0-8z") }
     val Info by lazy { icon("info", "M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z", "M12 16v-4M12 8h.01") }
     val Alert by lazy { icon("alert", "M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z", "M12 9v4M12 17h.01") }
+    val Moon by lazy { icon("moon", "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z") }
     val Lock by lazy { icon("lock", "M5 11h14v10H5z", "M8 11V7a4 4 0 0 1 8 0v4") }
     val Logout by lazy { icon("logout", "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9") }
     val Refresh by lazy { icon("refresh", "M21 12a9 9 0 1 1-3-6.7L21 8", "M21 3v5h-5") }
