@@ -38,6 +38,7 @@ import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.FadeInItem
 import id.biojelan.app.ui.components.HomeHeader
+import id.biojelan.app.ui.components.HomeScroll
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.NoteTone
 import id.biojelan.app.ui.components.PriceBand
@@ -68,9 +69,7 @@ fun AgenHomeTab(
     val threshold = AppConfig.STOCK_THRESHOLD_LITER
     val reached = stock >= threshold
 
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
-    ) {
+    HomeScroll {
         HomeHeader(name = firstName, initials = agenInitials(user.name), role = s.roleAgent)
 
         PriceBand(state.price, s.priceCaptionAgen)

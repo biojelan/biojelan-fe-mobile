@@ -251,6 +251,9 @@ interface BioStrings {
     val sectionAccountData: String
     val sectionAgentData: String
     val sectionSettings: String
+    val verified: String
+    val statusActive: String
+    val statusInactive: String
     val darkMode: String
     val darkModeHint: String
     val liveAlertsTitle: String

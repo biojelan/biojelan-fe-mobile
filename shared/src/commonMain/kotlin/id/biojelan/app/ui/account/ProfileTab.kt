@@ -1,6 +1,22 @@
 package id.biojelan.app.ui.account
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextOverflow
+import id.biojelan.app.ui.components.Drip
+import id.biojelan.app.ui.components.FadeInItem
+import id.biojelan.app.ui.components.waveFill
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -52,7 +68,6 @@ import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.NoteTone
 import id.biojelan.app.ui.components.ProfileRow
 import id.biojelan.app.ui.components.ScreenPad
-import id.biojelan.app.ui.components.ScreenTopBar
 import id.biojelan.app.ui.components.SectionHead
 import id.biojelan.app.ui.components.bioCard
 import id.biojelan.app.ui.icons.BioIcons
@@ -83,86 +98,105 @@ fun ProfileTab(user: UserDto, account: AccountViewModel) {
         else -> s.roleClient
     }
 
+    val idLabel = when {
+        isDriver -> s.labelIdDriver
+        agen != null -> s.labelIdAgent
+        else -> s.labelIdClient
+    }
+    val stats = if (agen != null) {
+        listOf(
+            HeroStat(s.tabStock, formatLiter(agen.stockLiter)),
+            HeroStat(s.labelStatus, if (agen.isOpen) s.open else s.closed, dot = if (agen.isOpen) c.primary else c.rust),
+            HeroStat(idLabel, agen.agenId.ifBlank { user.userId }, mono = true),
+        )
+    } else {
+        emptyList()
+    }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-        ScreenTopBar(s.profileTitle)
+        ProfileHero(
+            name = user.name,
+            initials = initialsOf(user.name),
+            roleLabel = roleLabel,
+            stats = stats,
+            onEdit = { account.clearFormError(); sheet = ProfileSheet.Edit },
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp),
+        )
+        if (stats.isNotEmpty()) Spacer(Modifier.height(HeroOverlap))
         Column(Modifier.padding(horizontal = ScreenPad)) {
 
-        Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.size(76.dp).background(c.primary, CircleShape), contentAlignment = Alignment.Center) {
-                Text(initialsOf(user.name), style = BioTheme.type.headline, color = c.onPrimary)
+            FadeInItem(1) {
+                Column {
+                    SectionHead(s.sectionAccountData)
+                    Column(Modifier.fillMaxWidth().bioCard(16.dp)) {
+                        InfoItem(BioIcons.Mail, s.fieldEmail, user.email.ifBlank { "-" })
+                        HairLine()
+                        InfoItem(BioIcons.Phone, s.labelPhone, user.phone.ifBlank { "-" })
+                        if (agen == null) {
+                            HairLine()
+                            InfoItem(BioIcons.IdCard, idLabel, user.userId)
+                        }
+                    }
+                }
             }
-            Spacer(Modifier.height(12.dp))
-            Text(user.name, style = BioTheme.type.subTitle, color = c.ink, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(6.dp))
-            BioChip(roleLabel, ChipKind.Open)
-        }
 
-        SectionHead(s.sectionAccountData)
-        Column(Modifier.fillMaxWidth().bioCard(16.dp)) {
-            InfoItem(BioIcons.Mail, s.fieldEmail, user.email.ifBlank { "-" })
-            HairLine()
-            InfoItem(BioIcons.Phone, s.labelPhone, user.phone.ifBlank { "-" })
-            HairLine()
-            InfoItem(
-                BioIcons.IdCard,
-                when {
-                    isDriver -> s.labelIdDriver
-                    agen != null -> s.labelIdAgent
-                    else -> s.labelIdClient
-                },
-                if (agen != null) agen.agenId.ifBlank { user.userId } else user.userId,
-            )
-        }
-
-        if (agen != null) {
-            SectionHead(s.sectionAgentData)
-            Column(Modifier.fillMaxWidth().bioCard(16.dp)) {
-                InfoItem(BioIcons.Pin, s.labelAddress, agen.address.ifBlank { "-" })
-                HairLine()
-                InfoItem(BioIcons.Clock, s.labelOperatingHours, formatOperatingHours(agen.openAt, agen.closeAt, agen.openDays))
-                HairLine()
-                InfoItem(
-                    BioIcons.Bank, s.labelBankAccount,
-                    if (agen.bankName.isBlank() && agen.accountNumber.isBlank()) s.notFilled else "${agen.bankName} · ${agen.accountNumber}",
-                )
-                HairLine()
-                InfoItem(BioIcons.Drop, s.labelStockThreshold, formatLiter(AppConfig.STOCK_THRESHOLD_LITER) + " · " + s.setByKilang)
+            if (agen != null) {
+                FadeInItem(2) {
+                    Column {
+                        SectionHead(s.sectionAgentData)
+                        Column(Modifier.fillMaxWidth().bioCard(16.dp)) {
+                            InfoItem(BioIcons.Pin, s.labelAddress, agen.address.ifBlank { "-" })
+                            HairLine()
+                            InfoItem(BioIcons.Clock, s.labelOperatingHours, formatOperatingHours(agen.openAt, agen.closeAt, agen.openDays))
+                            HairLine()
+                            InfoItem(
+                                BioIcons.Bank, s.labelBankAccount,
+                                if (agen.bankName.isBlank() && agen.accountNumber.isBlank()) s.notFilled else "${agen.bankName} · ${agen.accountNumber}",
+                            )
+                            HairLine()
+                            InfoItem(BioIcons.Drop, s.labelStockThreshold, formatLiter(AppConfig.STOCK_THRESHOLD_LITER) + " · " + s.setByKilang)
+                        }
+                    }
+                }
             }
-        }
 
-        SectionHead(s.sectionSettings)
-        Column(Modifier.fillMaxWidth().bioCard(16.dp)) {
-            ProfileRow(BioIcons.Edit, s.editProfile, onClick = { account.clearFormError(); sheet = ProfileSheet.Edit })
-            HairLine()
-            ProfileRow(BioIcons.Lock, s.changePassword, onClick = { account.clearFormError(); sheet = ProfileSheet.Password })
-            HairLine()
-            ProfileRow(
-                BioIcons.Moon, s.darkMode, value = s.darkModeHint,
-                onClick = { themeController.setDark(!isDark) },
-                trailing = { BioSwitch(checked = isDark, onCheckedChange = themeController::setDark) },
-            )
-            HairLine()
-            ProfileRow(
-                if (alertsOn) BioIcons.Bell else BioIcons.BellOff, s.liveAlertsTitle, value = s.liveAlertsHint,
-                onClick = liveAlerts::toggle,
-                trailing = { BioSwitch(checked = alertsOn, onCheckedChange = liveAlerts::setEnabled) },
-            )
-            HairLine()
-            ProfileRow(BioIcons.Logout, s.logout, tint = c.rust, onClick = { if (!busy) account.logout() })
-        }
+            FadeInItem(3) {
+                Column {
+                    SectionHead(s.sectionSettings)
+                    Column(Modifier.fillMaxWidth().bioCard(16.dp)) {
+                        ProfileRow(BioIcons.Edit, s.editProfile, onClick = { account.clearFormError(); sheet = ProfileSheet.Edit })
+                        HairLine()
+                        ProfileRow(BioIcons.Lock, s.changePassword, onClick = { account.clearFormError(); sheet = ProfileSheet.Password })
+                        HairLine()
+                        ProfileRow(
+                            BioIcons.Moon, s.darkMode, value = s.darkModeHint,
+                            onClick = { themeController.setDark(!isDark) },
+                            trailing = { BioSwitch(checked = isDark, onCheckedChange = themeController::setDark) },
+                        )
+                        HairLine()
+                        ProfileRow(
+                            if (alertsOn) BioIcons.Bell else BioIcons.BellOff, s.liveAlertsTitle, value = s.liveAlertsHint,
+                            onClick = liveAlerts::toggle,
+                            trailing = { BioSwitch(checked = alertsOn, onCheckedChange = liveAlerts::setEnabled) },
+                        )
+                        HairLine()
+                        ProfileRow(BioIcons.Logout, s.logout, tint = c.rust, onClick = { if (!busy) account.logout() })
+                    }
+                }
+            }
 
-        Text(
-            s.deleteAccount,
-            style = BioTheme.type.label,
-            color = c.rust,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 18.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .clickable { account.clearFormError(); sheet = ProfileSheet.Delete }
-                .padding(12.dp),
-        )
+            Text(
+                s.deleteAccount,
+                style = BioTheme.type.label,
+                color = c.rust,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 18.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { account.clearFormError(); sheet = ProfileSheet.Delete }
+                    .padding(12.dp),
+            )
         }
     }
 
@@ -171,6 +205,143 @@ fun ProfileTab(user: UserDto, account: AccountViewModel) {
         ProfileSheet.Password -> ChangePasswordSheet(account) { sheet = ProfileSheet.None }
         ProfileSheet.Delete -> DeleteAccountSheet(account) { sheet = ProfileSheet.None }
         ProfileSheet.None -> Unit
+    }
+}
+
+
+private val HeroOverlap = 34.dp
+
+private data class HeroStat(val label: String, val value: String, val mono: Boolean = false, val dot: Color? = null)
+
+/**
+ * Banner hijau gradasi (satu bahasa visual dengan header Beranda gaya Bold): judul + tombol edit cepat,
+ * avatar berring amber, nama, chip peran. Kartu ringkasan ([stats], hanya Agen) menempel di tepi bawahnya dan
+ * menjorok keluar sebesar [HeroOverlap]; pemanggil wajib memberi spasi setinggi itu bila [stats] tidak kosong.
+ */
+@Composable
+private fun ProfileHero(
+    name: String,
+    initials: String,
+    roleLabel: String,
+    stats: List<HeroStat>,
+    onEdit: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = BioTheme.colors
+    val s = BioText.current
+    val shape = RoundedCornerShape(28.dp)
+
+    Box(modifier.fillMaxWidth()) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(Brush.linearGradient(listOf(c.primary, c.primaryDeep)), shape),
+        ) {
+            Canvas(Modifier.matchParentSize()) {
+                val w = size.width
+                val h = size.height
+                listOf(46f, 80f, 114f, 148f).forEach { r ->
+                    drawCircle(
+                        c.onPrimary.copy(alpha = 0.10f),
+                        radius = r.dp.toPx(),
+                        center = Offset(w * 0.98f, -h * 0.08f),
+                        style = Stroke(1.5.dp.toPx()),
+                    )
+                }
+                drawPath(waveFill(w, h, h * 0.82f, 4.dp.toPx(), 120.dp.toPx(), 0.8f), c.amber.copy(alpha = 0.09f))
+                drawPath(waveFill(w, h, h * 0.90f, 3.dp.toPx(), 90.dp.toPx(), 2.6f), c.amber.copy(alpha = 0.13f))
+                drawCircle(c.amber.copy(alpha = 0.55f), 3.dp.toPx(), Offset(w * 0.24f, h * 0.30f))
+                drawCircle(c.amber.copy(alpha = 0.40f), 2.dp.toPx(), Offset(w * 0.17f, h * 0.42f))
+            }
+
+            Column(
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = if (stats.isEmpty()) 22.dp else 54.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(s.profileTitle, style = BioTheme.type.topTitle, color = c.onPrimary, modifier = Modifier.weight(1f))
+                    Box(
+                        Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(c.onPrimary.copy(alpha = 0.16f))
+                            .clickable(onClick = onEdit),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(BioIcons.Edit, contentDescription = s.editProfile, tint = c.onPrimary, modifier = Modifier.size(17.dp))
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Box(
+                    Modifier
+                        .size(84.dp)
+                        .background(c.onPrimary.copy(alpha = 0.16f), CircleShape)
+                        .border(3.dp, c.amber, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(initials, style = BioTheme.type.display, color = c.onPrimary)
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    name,
+                    style = BioTheme.type.headline,
+                    color = c.onPrimary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    HeroTag(roleLabel)
+                }
+            }
+        }
+
+        if (stats.isNotEmpty()) Row(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = HeroOverlap)
+                .padding(horizontal = 10.dp)
+                .fillMaxWidth()
+                .shadow(10.dp, RoundedCornerShape(18.dp), clip = false)
+                .bioCard(18.dp)
+                .height(IntrinsicSize.Min),
+        ) {
+            stats.forEachIndexed { i, st ->
+                if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().padding(vertical = 12.dp).background(c.line))
+                Column(
+                    Modifier.weight(1f).padding(horizontal = 6.dp, vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(st.label, style = BioTheme.type.caption, color = c.muted, maxLines = 1)
+                    Spacer(Modifier.height(3.dp))
+                    Row(Modifier.height(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        st.dot?.let { Drip(it, size = 8.dp) }
+                        Text(
+                            st.value,
+                            style = if (st.mono) BioTheme.type.mono else BioTheme.type.statNumber,
+                            color = st.dot ?: c.ink,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Label kecil di atas banner hijau (BioChip bawaan berwarna terang, kurang cocok di atas hijau pekat). */
+@Composable
+private fun HeroTag(text: String) {
+    val c = BioTheme.colors
+    Row(
+        Modifier.background(c.onPrimary.copy(alpha = 0.16f), RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Text(text, style = BioTheme.type.chip, color = c.onPrimary, maxLines = 1)
     }
 }
 

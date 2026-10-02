@@ -53,6 +53,7 @@ import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.FadeInItem
 import id.biojelan.app.ui.components.HomeHeader
+import id.biojelan.app.ui.components.HomeScroll
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.SectionHead
@@ -77,9 +78,7 @@ fun DriverHomeTab(
     val s = BioText.current
     val firstName = firstNameOf(name, s.roleDriver)
 
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
-    ) {
+    HomeScroll {
         HomeHeader(name = firstName, initials = initialsOf(name), role = s.roleDriver)
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -37,14 +37,15 @@ import id.biojelan.app.ui.Viewer
 import id.biojelan.app.ui.components.BioButton
 import id.biojelan.app.ui.components.AvatarBox
 import id.biojelan.app.ui.components.BtnStyle
-import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.HomeHeader
+import id.biojelan.app.ui.components.HomeScroll
 import id.biojelan.app.ui.components.LoadingBlock
 import id.biojelan.app.ui.components.PriceBand
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.SectionHead
 import id.biojelan.app.ui.components.bioCard
+import id.biojelan.app.ui.components.rememberHeldLoading
 import id.biojelan.app.ui.counterpartName
 import id.biojelan.app.ui.icons.BioIcons
 import id.biojelan.app.ui.strings.BioText
@@ -62,20 +63,8 @@ fun KlienHomeTab(
     val c = BioTheme.colors
     val s = BioText.current
     val firstName = firstNameOf(name, s.defaultNickname)
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
-    ) {
-        HomeHeader(
-            name = firstName,
-            initials = initialsOf(name),
-            role = s.roleClient,
-            trailing = {
-                CircleIconButton(
-                    BioIcons.Refresh, onClick = vm::manualRefresh, contentDescription = s.reload,
-                    loading = state.txLoading || state.agensLoading,
-                )
-            },
-        )
+    HomeScroll {
+        HomeHeader(name = firstName, initials = initialsOf(name), role = s.roleClient)
 
         PriceBand(state.price, s.priceCaption)
 
@@ -121,6 +110,13 @@ fun KlienHomeTab(
             }
         }
 
+        Spacer(Modifier.height(18.dp))
+        BioButton(
+            s.reload, vm::manualRefresh, Modifier.fillMaxWidth(),
+            style = BtnStyle.Outline,
+            loading = rememberHeldLoading(state.txLoading || state.agensLoading),
+            icon = BioIcons.Refresh,
+        )
     }
 }
 

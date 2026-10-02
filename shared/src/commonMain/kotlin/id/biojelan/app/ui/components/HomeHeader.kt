@@ -1,6 +1,19 @@
 package id.biojelan.app.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +43,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,19 +61,22 @@ import org.koin.compose.koinInject
  * Tiga gaya header Beranda. Semuanya berisi sapaan, nama, peran, tanggal, dan tombol lonceng (toggle notifikasi).
  *
  *  - [Avatar]: tanpa kartu. Avatar + sapaan di kiri, tombol lonceng di kanan. Paling ringan.
+ *  - [Graphic]: tanpa kartu dan tanpa border. Isi menempel langsung di latar layar, dihiasi busur kontur,
+ *    tetes, wash hijau muda, dan gelombang minyak yang memudar, digambar langsung di latar sampai ke tepi atas layar.
+ *    Gaya bawaan; butuh isi Beranda dibungkus [HomeScroll].
  *  - [Card]: kartu gradasi lembut dengan busur kontur dan gelombang minyak (satu bahasa visual dengan kartu stok).
  *  - [Bold]: kartu hijau solid, teks terang. Paling mencolok.
  */
-enum class HomeHeaderStyle { Avatar, Card, Bold }
+enum class HomeHeaderStyle { Avatar, Graphic, Card, Bold }
 
 /** Ganti [style] di sini untuk mengubah header di Beranda Klien, Agen, dan Driver sekaligus. */
 object HomeHeaderDefaults {
-    val style: HomeHeaderStyle = HomeHeaderStyle.Card
+    val style: HomeHeaderStyle = HomeHeaderStyle.Graphic
 }
 
 /**
  * Header Beranda. [name] sudah berupa nama sapaan (lihat `firstNameOf`), [initials] untuk avatar,
- * [role] label peran. [trailing] opsional, mis. tombol muat ulang Klien. Padding horizontal layar
+ * [role] label peran. [trailing] opsional. Padding horizontal layar
  * diurus pemanggil (header tidak menambah sendiri).
  *
  * Lonceng membuka [NotificationSheet] (riwayat + toggle pop-up). State dibaca dari [LiveAlerts] yang di-inject,
@@ -85,6 +102,7 @@ fun HomeHeader(
     val outer = modifier.fillMaxWidth().padding(top = 14.dp, bottom = 16.dp)
     when (style) {
         HomeHeaderStyle.Avatar -> AvatarHeader(outer, hello, name, initials, role, date, alertsOn, unread, onBell, trailing)
+        HomeHeaderStyle.Graphic -> GraphicHeader(outer, hello, name, initials, role, date, alertsOn, unread, onBell, trailing)
         HomeHeaderStyle.Card -> CardHeader(outer, false, hello, name, initials, role, date, alertsOn, unread, onBell, trailing)
         HomeHeaderStyle.Bold -> CardHeader(outer, true, hello, name, initials, role, date, alertsOn, unread, onBell, trailing)
     }
@@ -119,7 +137,121 @@ private fun AvatarHeader(
     }
 }
 
-// ------------------------------------------------------------------ gaya 2 & 3: Card / Bold
+// ------------------------------------------------------------------ gaya Graphic: tanpa kartu, grafis di latar
+
+/** Posisi header di dalam isi scroll (px), dilaporkan [GraphicHeader] ke [HomeBackdrop]. */
+internal class HomeBackdropState {
+    var headerTop by mutableFloatStateOf(0f)
+    var headerHeight by mutableFloatStateOf(0f)
+}
+
+internal val LocalHomeBackdrop = staticCompositionLocalOf<HomeBackdropState?> { null }
+
+/**
+ * Pembungkus isi scroll Beranda (Klien, Agen, Driver). Isinya sama seperti `Column` scroll biasa, tetapi di
+ * belakangnya ada [HomeBackdrop] yang menggambar grafis header sampai ke tepi atas layar (di balik status bar)
+ * dan ikut bergeser saat di-scroll. Container scroll memotong gambar di batasnya, jadi grafis tidak bisa
+ * digambar dari dalam header.
+ */
+@Composable
+fun HomeScroll(content: @Composable ColumnScope.() -> Unit) {
+    val scroll = rememberScrollState()
+    val backdrop = remember { HomeBackdropState() }
+    Box(Modifier.fillMaxSize()) {
+        HomeBackdrop(scroll, backdrop)
+        CompositionLocalProvider(LocalHomeBackdrop provides backdrop) {
+            Column(
+                Modifier.fillMaxSize().verticalScroll(scroll).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeBackdrop(scroll: ScrollState, backdrop: HomeBackdropState) {
+    val c = BioTheme.colors
+    val statusTop = WindowInsets.statusBars.getTop(LocalDensity.current).toFloat()
+    // Tanpa gaya Graphic (mis. Card/Bold) tidak ada yang melapor, jadi tidak ada yang digambar.
+    Canvas(Modifier.fillMaxSize()) {
+        val hh = backdrop.headerHeight
+        if (hh <= 0f) return@Canvas
+        val w = size.width
+        translate(top = -scroll.value.toFloat()) {
+            val top = -statusTop                 // tepi atas layar, dalam koordinat isi scroll
+            val hTop = backdrop.headerTop
+            val bottom = hTop + hh
+            val region = bottom - top
+            // wash hijau muda di pojok kanan-atas (pengganti gradasi kartu), memudar ke latar
+            val glowR = 230.dp.toPx()
+            val glowAt = Offset(w, top + region * 0.10f)
+            drawCircle(Brush.radialGradient(listOf(c.primaryTint, Color.Transparent), center = glowAt, radius = glowR), glowR, glowAt)
+            // busur kontur, penuh sampai tepi atas layar
+            listOf(46f, 80f, 114f, 148f, 182f).forEach { r ->
+                drawCircle(
+                    c.primary.copy(alpha = 0.12f),
+                    radius = r.dp.toPx(),
+                    center = Offset(w + 8.dp.toPx(), top + region * 0.18f),
+                    style = Stroke(1.5.dp.toPx()),
+                )
+            }
+            // gelombang minyak terisi, memudar ke bawah supaya tidak ada tepi keras
+            val back = Brush.verticalGradient(listOf(c.amber.copy(alpha = 0.26f), c.amber.copy(alpha = 0f)), startY = hTop + hh * 0.62f, endY = bottom)
+            val front = Brush.verticalGradient(listOf(c.amber.copy(alpha = 0.34f), c.amber.copy(alpha = 0f)), startY = hTop + hh * 0.78f, endY = bottom)
+            drawPath(waveFill(w, bottom, hTop + hh * 0.66f, 4.dp.toPx(), 110.dp.toPx(), 0.8f), back)
+            drawPath(waveFill(w, bottom, hTop + hh * 0.80f, 3.dp.toPx(), 80.dp.toPx(), 2.6f), front)
+            // tetes kecil
+            drawCircle(c.amber.copy(alpha = 0.55f), 3.dp.toPx(), Offset(w * 0.66f, hTop + hh * 0.20f))
+            drawCircle(c.amber.copy(alpha = 0.38f), 2.dp.toPx(), Offset(w * 0.73f, hTop + hh * 0.34f))
+        }
+    }
+}
+
+@Composable
+private fun GraphicHeader(
+    modifier: Modifier,
+    hello: String,
+    name: String,
+    initials: String,
+    role: String,
+    date: String,
+    alertsOn: Boolean,
+    unread: Int,
+    onBell: () -> Unit,
+    trailing: (@Composable () -> Unit)?,
+) {
+    val c = BioTheme.colors
+    val backdrop = LocalHomeBackdrop.current
+    // Grafisnya digambar [HomeBackdrop] di belakang scroll (supaya bisa sampai ke tepi atas layar);
+    // header cuma melaporkan posisinya agar gelombang menempel di dasar header.
+    Box(
+        modifier.onGloballyPositioned { coords ->
+            backdrop?.let {
+                it.headerTop = coords.positionInParent().y
+                it.headerHeight = coords.size.height.toFloat()
+            }
+        },
+    ) {
+        Column(Modifier.padding(bottom = 30.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HeaderAvatar(initials, bold = false)
+                Column(Modifier.weight(1f)) {
+                    Text(hello, style = BioTheme.type.body, color = c.muted)
+                    Text(name, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                trailing?.invoke()
+                AlertsBell(alertsOn, unread, onBell)
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BioChip(role, ChipKind.Open)
+                Text(date, style = BioTheme.type.small, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------------ gaya Card / Bold
 
 @Composable
 private fun CardHeader(
