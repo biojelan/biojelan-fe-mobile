@@ -52,7 +52,7 @@ object IdStrings : BioStrings {
     override val tabProfile = "Profil"
 
     // ============================================================ Klien Home
-    override val priceCaption = "Harga acuan Kilang · berlaku untuk semua Agen"
+    override val priceCaption = "Harga acuan Kilang"
     override val quickActionFindAgent = "Cari Agen"
     override val quickActionHistory = "Riwayat"
     override val quickActionMyId = "ID Saya"
@@ -66,7 +66,7 @@ object IdStrings : BioStrings {
         "$agenName mencatat penjualan $volume minyak jelantah atas nama Anda."
 
     // ============================================================ Agen Home
-    override val priceCaptionAgen = "Harga acuan Kilang · dipakai saat mencatat transaksi"
+    override val priceCaptionAgen = "Harga acuan Kilang terkini"
     override val todayTransactions = "Transaksi hari ini"
     override val collectedToday = "Terkumpul hari ini"
     override val valueToday = "Nilai hari ini"
