@@ -46,7 +46,7 @@ import id.biojelan.app.ui.components.rememberHeldLoading
 import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.Drip
-import id.biojelan.app.ui.components.DropGauge
+import id.biojelan.app.ui.components.JerrycanGauge
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.FadeInItem
 import id.biojelan.app.ui.components.NoteBox
@@ -129,7 +129,7 @@ fun AgenHomeTab(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            DropGauge(fill = (stock / threshold).toFloat(), modifier = Modifier.size(width = 46.dp, height = 57.dp))
+            JerrycanGauge(fill = (stock / threshold).toFloat(), animate = false, modifier = Modifier.size(width = 46.dp, height = 57.dp))
             Column(Modifier.weight(1f)) {
                 Text(s.currentStockLabel, style = BioTheme.type.eyebrow, color = c.muted)
                 Text(formatLiter(stock), style = BioTheme.type.display, color = c.ink)

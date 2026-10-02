@@ -1,6 +1,11 @@
 package id.biojelan.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -34,10 +39,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -90,6 +100,86 @@ fun DropGauge(
             if (outline) {
                 drawPath(path, color = c.primary.copy(alpha = 0.35f), style = Stroke(width = 2.5f))
             }
+        }
+    }
+}
+
+// ------------------------------------------------------------------ jerigen jelantah
+
+private const val JERRYCAN_BODY = "M14 38 Q14 30 22 30 H58 L86 44 V108 Q86 118 76 118 H24 Q14 118 14 108 Z"
+private const val JERRYCAN_HANDLE = "M24 30 V20 Q24 14 30 14 H44 Q50 14 50 20 V30"
+private const val WAVE_PERIOD = 66f
+
+// Tinggi isi minimum (proporsi badan jerigen) supaya stok kecil tetap terlihat sebagai cairan.
+private const val MIN_VISIBLE_LEVEL = 0.14f
+
+private fun wavePath(surfaceY: Float, amplitude: Float, shift: Float): Path = Path().apply {
+    var x = -WAVE_PERIOD + shift
+    moveTo(x, surfaceY)
+    repeat(6) {
+        quadraticTo(x + WAVE_PERIOD / 4f, surfaceY - amplitude, x + WAVE_PERIOD / 2f, surfaceY)
+        quadraticTo(x + WAVE_PERIOD * 3f / 4f, surfaceY + amplitude, x + WAVE_PERIOD, surfaceY)
+        x += WAVE_PERIOD
+    }
+    lineTo(x, 124f)
+    lineTo(-WAVE_PERIOD + shift, 124f)
+    close()
+}
+
+/**
+ * Jerigen jelantah. [fill] 0..1 = rasio stok terhadap ambang (stok / ambang), jadi tingginya
+ * mengikuti data asli. Stok > 0 selalu tampil minimal [MIN_VISIBLE_LEVEL] agar tidak terlihat kosong;
+ * angka sebenarnya tetap ditampilkan sebagai teks di luar gambar. [animate] menggeser gelombang pelan.
+ * Viewbox 100×124, jadi beri modifier dengan rasio kira-kira 0,8.
+ */
+@Composable
+fun JerrycanGauge(
+    fill: Float,
+    modifier: Modifier = Modifier,
+    animate: Boolean = true,
+) {
+    val c = BioTheme.colors
+    val body = remember { PathParser().parsePathString(JERRYCAN_BODY).toPath() }
+    val handle = remember { PathParser().parsePathString(JERRYCAN_HANDLE).toPath() }
+    val level = fill.coerceIn(0f, 1f)
+    val shift by if (animate && level > 0f) {
+        rememberInfiniteTransition(label = "jerrycanWave").animateFloat(
+            initialValue = 0f,
+            targetValue = WAVE_PERIOD,
+            animationSpec = infiniteRepeatable(tween(3200, easing = LinearEasing), RepeatMode.Restart),
+            label = "waveShift",
+        )
+    } else {
+        remember { mutableStateOf(0f) }
+    }
+    val edge = c.primary.copy(alpha = 0.35f)
+
+    Canvas(modifier) {
+        scale(size.width / 100f, size.height / 124f, pivot = Offset.Zero) {
+            // tutup + pegangan
+            drawRoundRect(c.primary, topLeft = Offset(62f, 12f), size = Size(16f, 22f), cornerRadius = CornerRadius(3f, 3f))
+            drawPath(handle, color = edge, style = Stroke(width = 4f, cap = StrokeCap.Round))
+
+            // badan
+            drawPath(body, color = c.primaryTint)
+
+            if (level > 0f) {
+                val shown = level.coerceAtLeast(MIN_VISIBLE_LEVEL)
+                val surface = 118f - 88f * shown
+                clipPath(body) {
+                    drawPath(wavePath(surface - 2f, amplitude = 3.5f, shift = shift), color = Color(0xFFEBC265))
+                    drawPath(wavePath(surface + 2f, amplitude = 3.5f, shift = WAVE_PERIOD - shift), color = c.amber)
+                }
+            }
+
+            drawPath(body, color = edge, style = Stroke(width = 2.5f))
+
+            // skala liter
+            listOf(54f, 68f, 82f).forEach { y ->
+                drawLine(edge, Offset(66f, y), Offset(78f, y), strokeWidth = 1.5f, cap = StrokeCap.Round)
+            }
+            // kilau kaca
+            drawLine(Color.White.copy(alpha = 0.55f), Offset(22f, 50f), Offset(22f, 92f), strokeWidth = 4f, cap = StrokeCap.Round)
         }
     }
 }

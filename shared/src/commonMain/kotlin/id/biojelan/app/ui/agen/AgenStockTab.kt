@@ -37,7 +37,7 @@ import id.biojelan.app.ui.Viewer
 import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.CircleIconButton
-import id.biojelan.app.ui.components.DropGauge
+import id.biojelan.app.ui.components.JerrycanGauge
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.ScreenPad
@@ -69,7 +69,7 @@ fun AgenStockTab(state: AgenUiState, user: UserDto, vm: AgenViewModel) {
         })
         Column(Modifier.padding(horizontal = ScreenPad), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(4.dp))
-            DropGauge(fill = ratio, modifier = Modifier.size(width = 132.dp, height = 164.dp))
+            JerrycanGauge(fill = ratio, modifier = Modifier.size(width = 132.dp, height = 164.dp))
             Spacer(Modifier.height(12.dp))
             Text(formatLiter(stock), style = BioTheme.type.title.copy(fontSize = 34.sp), color = c.ink)
             Text(s.thresholdCaption(formatLiter(threshold)), style = BioTheme.type.body, color = c.muted)
