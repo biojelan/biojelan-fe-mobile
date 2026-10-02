@@ -1,12 +1,13 @@
 package id.biojelan.app.ui.auth
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
@@ -28,10 +29,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -60,6 +63,12 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
+
+// ------------------------------------------------------------------ transisi Masuk <-> Daftar
+
+/** Satu durasi + kurva untuk SEMUA bagian yang bergeser saat ganti mode, supaya hero & form bergerak serempak. */
+internal const val AuthModeMillis = 360
+internal val AuthModeEasing = FastOutSlowInEasing
 
 // ------------------------------------------------------------------ entrance
 
@@ -253,13 +262,24 @@ internal fun AuthHero(
     val paper = c.paper
     val haloAlpha = if (bleed) 0.22f else 0.30f
 
+    // Tinggi/rasio dianimasikan eksplisit (tween) -- bukan animateContentSize berpegas -- agar selaras dengan form di bawahnya.
+    val heroHeight by animateDpAsState(
+        statusTop + if (compact) 112.dp else 150.dp,
+        tween(AuthModeMillis, easing = AuthModeEasing),
+        label = "hero-height",
+    )
+    val heroRatio by animateFloatAsState(
+        if (compact) 3.2f else 2.5f,
+        tween(AuthModeMillis, easing = AuthModeEasing),
+        label = "hero-ratio",
+    )
     val frame = if (bleed) {
-        modifier.fillMaxWidth().animateContentSize().height(statusTop + if (compact) 112.dp else 150.dp)
+        // clipToBounds: cincin/riak digambar lebih besar dari hero, sebelumnya dipotong oleh animateContentSize.
+        modifier.fillMaxWidth().height(heroHeight).clipToBounds()
     } else {
         modifier
             .fillMaxWidth()
-            .animateContentSize()
-            .aspectRatio(if (compact) 3.2f else 2.5f)
+            .aspectRatio(heroRatio)
             .clip(RoundedCornerShape(24.dp))
     }
 

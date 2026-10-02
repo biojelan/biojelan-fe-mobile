@@ -6,6 +6,6 @@ import id.biojelan.app.di.initKoin
 class BioJelanApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        initKoin()
+        initKoin(AndroidSystemNotifier(this))
     }
 }

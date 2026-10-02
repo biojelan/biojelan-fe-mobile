@@ -1,5 +1,9 @@
 package id.biojelan.app.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +30,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
@@ -120,22 +128,38 @@ fun BioField(
 @Composable
 fun SegmentedTabs(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val c = BioTheme.colors
+    // Indikator aktif menggeser halus ke tab terpilih (bukan loncat), digambar di fase draw supaya tanpa recompose per frame.
+    val position by animateFloatAsState(selected.toFloat(), tween(320, easing = FastOutSlowInEasing), label = "seg-pos")
     Row(
-        modifier = modifier.fillMaxWidth().background(c.bg, RoundedCornerShape(14.dp)).padding(4.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .background(c.bg, RoundedCornerShape(14.dp))
+            .padding(4.dp)
+            .drawBehind {
+                val gap = 4.dp.toPx()
+                val n = options.size.coerceAtLeast(1)
+                val w = (size.width - gap * (n - 1)) / n
+                drawRoundRect(
+                    color = c.surface,
+                    topLeft = Offset(position * (w + gap), 0f),
+                    size = Size(w, size.height),
+                    cornerRadius = CornerRadius(11.dp.toPx(), 11.dp.toPx()),
+                )
+            },
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         options.forEachIndexed { index, text ->
             val on = index == selected
+            val textColor by animateColorAsState(if (on) c.primary else c.muted, tween(260), label = "seg-text")
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(11.dp))
-                    .background(if (on) c.surface else c.bg, RoundedCornerShape(11.dp))
                     .clickable { onSelect(index) }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text, style = BioTheme.type.bodyBold, color = if (on) c.primary else c.muted)
+                Text(text, style = BioTheme.type.bodyBold, color = textColor)
             }
         }
     }

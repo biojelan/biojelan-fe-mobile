@@ -3,6 +3,8 @@ package id.biojelan.app.di
 import com.russhwolf.settings.Settings
 import id.biojelan.app.core.AppConfig
 import id.biojelan.app.data.local.LiveAlerts
+import id.biojelan.app.data.local.NoopSystemNotifier
+import id.biojelan.app.data.local.SystemNotifier
 import id.biojelan.app.data.local.SessionStore
 import id.biojelan.app.data.remote.ApiClient
 import id.biojelan.app.data.repository.AuthRepository
@@ -48,7 +50,7 @@ private val dataModule = module {
     }
     single<Settings> { Settings() }
     single { SessionStore(get()) }
-    single { LiveAlerts(get()) }
+    single { LiveAlerts(get(), get()) }
     single { ThemeController(get()) }
     single { SessionManager(get(), get(), get()) }
     single { ApiClient(get(), get(), get()) }
@@ -70,8 +72,11 @@ private val viewModelModule = module {
     factoryOf(::AccountViewModel)
 }
 
-fun initKoin() {
+fun initKoin() = initKoin(NoopSystemNotifier)
+
+/** Dipakai platform yang punya notifikasi sistem (Android) untuk menyuntikkan implementasinya. */
+fun initKoin(notifier: SystemNotifier) {
     startKoin {
-        modules(dataModule, viewModelModule)
+        modules(dataModule, viewModelModule, module { single<SystemNotifier> { notifier } })
     }
 }

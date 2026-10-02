@@ -255,7 +255,7 @@ private fun DriverPickupCard(
 private fun DriverIdleState(onRecord: () -> Unit, onHistory: () -> Unit) {
     val s = BioText.current
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        DriverIdleScene(title = s.driverIdleTitle, liveText = s.driverIdleLive)
+        DriverIdleScene(liveText = s.driverIdleLive)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             BioButton(s.driverRecordButton, onRecord, Modifier.weight(1f), icon = BioIcons.Plus)
             BioButton(s.driverIdleHistory, onHistory, Modifier.weight(1f), style = BtnStyle.Outline, icon = BioIcons.Receipt)

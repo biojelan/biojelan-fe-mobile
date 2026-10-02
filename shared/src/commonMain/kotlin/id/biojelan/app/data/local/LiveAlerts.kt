@@ -16,7 +16,10 @@ import kotlinx.coroutines.flow.asStateFlow
  * Catatan: hanya mencatat kejadian yang terlihat selagi app terbuka. Transaksi yang masuk saat app mati
  * baru bisa tercatat dengan push (FCM/APNs) + endpoint notifikasi dari backend.
  */
-class LiveAlerts(private val store: SessionStore) {
+class LiveAlerts(
+    private val store: SessionStore,
+    private val notifier: SystemNotifier = NoopSystemNotifier,
+) {
     private val _enabled = MutableStateFlow(store.liveAlerts ?: true)
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
 
@@ -30,8 +33,14 @@ class LiveAlerts(private val store: SessionStore) {
 
     fun toggle() = setEnabled(!_enabled.value)
 
-    /** Catat kejadian baru ke riwayat. */
-    fun record(text: String) = save(_items.value.withNewAlert(text, nowEpochMillis()))
+    /**
+     * Catat kejadian baru ke riwayat. Kalau pop-up aktif, juga diteruskan ke [SystemNotifier] (notifikasi sistem
+     * hanya benar-benar tampil bila izin diberikan dan app sedang tidak di depan; keputusan itu ada di platform).
+     */
+    fun record(text: String) {
+        save(_items.value.withNewAlert(text, nowEpochMillis()))
+        if (_enabled.value) notifier.show(text)
+    }
 
     fun markAllRead() = save(_items.value.allMarkedRead())
 

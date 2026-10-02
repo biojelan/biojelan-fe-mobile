@@ -3,6 +3,7 @@ package id.biojelan.app.ui.auth
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -135,8 +136,8 @@ fun LoginScreen(onForgot: () -> Unit, vm: AuthViewModel = koinViewModel()) {
             Column(Modifier.padding(start = ScreenPad, end = ScreenPad, top = if (bleed) 12.dp else 20.dp, bottom = 24.dp)) {
                 Crossfade(
                     targetState = isRegister,
-                    animationSpec = tween(260),
-                    modifier = Modifier.fillMaxWidth().animateContentSize().entrance(1),
+                    animationSpec = tween(AuthModeMillis * 2 / 3, easing = AuthModeEasing),
+                    modifier = Modifier.fillMaxWidth().animateContentSize(tween(AuthModeMillis, easing = AuthModeEasing)).entrance(1),
                     label = "auth-heading",
                 ) { register ->
                     Column {
@@ -168,8 +169,10 @@ fun LoginScreen(onForgot: () -> Unit, vm: AuthViewModel = koinViewModel()) {
 
                 AnimatedVisibility(
                     visible = isRegister,
-                    enter = expandVertically(tween(300)) + fadeIn(tween(300)),
-                    exit = shrinkVertically(tween(220)) + fadeOut(tween(160)),
+                    enter = expandVertically(tween(AuthModeMillis, easing = AuthModeEasing)) +
+                        fadeIn(tween(AuthModeMillis * 2 / 3, delayMillis = AuthModeMillis / 6, easing = AuthModeEasing)),
+                    exit = shrinkVertically(tween(AuthModeMillis, easing = AuthModeEasing)) +
+                        fadeOut(tween(AuthModeMillis / 2, easing = AuthModeEasing)),
                 ) {
                     BioField(
                         s.fieldFullName, name, { name = it },
@@ -196,8 +199,10 @@ fun LoginScreen(onForgot: () -> Unit, vm: AuthViewModel = koinViewModel()) {
                 )
                 AnimatedVisibility(
                     visible = isRegister,
-                    enter = expandVertically(tween(300)) + fadeIn(tween(300)),
-                    exit = shrinkVertically(tween(220)) + fadeOut(tween(160)),
+                    enter = expandVertically(tween(AuthModeMillis, easing = AuthModeEasing)) +
+                        fadeIn(tween(AuthModeMillis * 2 / 3, delayMillis = AuthModeMillis / 6, easing = AuthModeEasing)),
+                    exit = shrinkVertically(tween(AuthModeMillis, easing = AuthModeEasing)) +
+                        fadeOut(tween(AuthModeMillis / 2, easing = AuthModeEasing)),
                 ) {
                     BioField(
                         s.fieldRepeatPassword, confirmation, { confirmation = it },
@@ -229,26 +234,39 @@ fun LoginScreen(onForgot: () -> Unit, vm: AuthViewModel = koinViewModel()) {
                     modifier = Modifier.fillMaxWidth().entrance(5),
                 )
 
-                if (!isRegister) {
-                    Text(
-                        s.forgotPasswordLink,
-                        style = BioTheme.type.label,
-                        color = c.primary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .entrance(6)
-                            .padding(top = 8.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable {
-                                vm.clearErrors()
-                                onForgot()
-                            }
-                            .padding(12.dp),
-                    )
+                // Wrapper menjaga stagger masuk awal (entrance 6) tanpa diputar ulang tiap ganti mode.
+                Column(Modifier.fillMaxWidth().entrance(6)) {
+                    AnimatedVisibility(
+                        visible = !isRegister,
+                        enter = expandVertically(tween(AuthModeMillis, easing = AuthModeEasing)) +
+                            fadeIn(tween(AuthModeMillis * 2 / 3, delayMillis = AuthModeMillis / 6, easing = AuthModeEasing)),
+                        exit = shrinkVertically(tween(AuthModeMillis, easing = AuthModeEasing)) +
+                            fadeOut(tween(AuthModeMillis / 2, easing = AuthModeEasing)),
+                    ) {
+                        Text(
+                            s.forgotPasswordLink,
+                            style = BioTheme.type.label,
+                            color = c.primary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    vm.clearErrors()
+                                    onForgot()
+                                }
+                                .padding(12.dp),
+                        )
+                    }
                 }
 
-                Spacer(Modifier.height(if (isRegister) 22.dp else 8.dp))
+                val guestGap by animateDpAsState(
+                    if (isRegister) 22.dp else 8.dp,
+                    tween(AuthModeMillis, easing = AuthModeEasing),
+                    label = "guest-gap",
+                )
+                Spacer(Modifier.height(guestGap))
                 GuestEntryButton(onClick = vm::enterGuestMode, modifier = Modifier.entrance(7))
             }
         }

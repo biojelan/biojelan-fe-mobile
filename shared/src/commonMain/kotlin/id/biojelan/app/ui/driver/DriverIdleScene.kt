@@ -61,7 +61,7 @@ private val Blocks = listOf(
  * truk yang menyusuri rute dari titik Driver (radar) ke tujuan (pin), tanpa paragraf teks.
  */
 @Composable
-internal fun DriverIdleScene(title: String, liveText: String, modifier: Modifier = Modifier) {
+internal fun DriverIdleScene(liveText: String, modifier: Modifier = Modifier) {
     val c = BioTheme.colors
     val truck = rememberVectorPainter(BioIcons.Truck)
     val pin = remember { PathParser().parsePathString(PIN_PATH).toPath() }
@@ -164,9 +164,6 @@ internal fun DriverIdleScene(title: String, liveText: String, modifier: Modifier
         ScenePill(Modifier.align(Alignment.TopStart).padding(12.dp)) {
             Box(Modifier.size(7.dp).background(c.primary.copy(alpha = blink), RoundedCornerShape(50)))
             Text(liveText, style = BioTheme.type.chip, color = c.primary)
-        }
-        ScenePill(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
-            Text(title, style = BioTheme.type.cardTitle, color = c.ink)
         }
     }
 }
