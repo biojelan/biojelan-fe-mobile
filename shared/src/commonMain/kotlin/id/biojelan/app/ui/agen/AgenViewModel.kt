@@ -5,6 +5,7 @@ import id.biojelan.app.core.AppConfig
 import id.biojelan.app.core.hasNewActionable
 import id.biojelan.app.core.isToday
 import id.biojelan.app.core.parseIsoMillis
+import id.biojelan.app.data.local.LiveAlerts
 import id.biojelan.app.data.remote.ApiResult
 import id.biojelan.app.data.remote.DriverTransactionDto
 import id.biojelan.app.data.remote.PickupStatusDto
@@ -88,6 +89,7 @@ class AgenViewModel(
     private val priceProvider: PriceProvider,
     private val pickups: PickupRepository,
     private val driverTx: DriverTransactionRepository,
+    override val liveAlerts: LiveAlerts,
 ) : BaseViewModel() {
     private val _clientPreview = MutableStateFlow<ClientPreview>(ClientPreview.Idle)
     val clientPreview: StateFlow<ClientPreview> = _clientPreview.asStateFlow()
@@ -280,7 +282,7 @@ class AgenViewModel(
                     key = { "${it.transactionId}:${it.status}" },
                     actionable = { it.txStatus == TxStatus.Pending || it.txStatus == TxStatus.CancelRequested },
                 )
-                if (silent && hasNew) toast("Ada permintaan Driver baru yang menunggu persetujuan Anda")
+                if (silent && hasNew) alert("Ada permintaan Driver baru yang menunggu persetujuan Anda")
             }
             is ApiResult.Failure -> if (!silent) {
                 val hadData = _state.value.driverTransactions.isNotEmpty()

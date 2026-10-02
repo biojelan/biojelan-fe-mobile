@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import id.biojelan.app.core.AppConfig
 import id.biojelan.app.core.hasNewActionable
 import id.biojelan.app.core.parseIsoMillis
+import id.biojelan.app.data.local.LiveAlerts
 import id.biojelan.app.data.remote.AgenSummaryDto
 import id.biojelan.app.data.remote.ApiResult
 import id.biojelan.app.data.remote.TransactionDto
@@ -55,6 +56,7 @@ class KlienViewModel(
     private val transactions: TransactionRepository,
     private val session: SessionManager,
     private val priceProvider: PriceProvider,
+    override val liveAlerts: LiveAlerts,
 ) : BaseViewModel() {
     private val _state = MutableStateFlow(KlienUiState())
     val state: StateFlow<KlienUiState> = _state.asStateFlow()
@@ -85,7 +87,7 @@ class KlienViewModel(
             key = { "${it.transactionId}:${it.status}" },
             actionable = { it.txStatus == TxStatus.Pending || it.txStatus == TxStatus.CancelRequested },
         )
-        if (hasNew) toast("Ada transaksi baru yang menunggu persetujuan Anda")
+        if (hasNew) alert("Ada transaksi baru yang menunggu persetujuan Anda")
     }
 
     fun refreshAll(): Job = viewModelScope.launch {

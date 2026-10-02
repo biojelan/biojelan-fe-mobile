@@ -12,11 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.biojelan.app.core.AppConfig
 import id.biojelan.app.core.formatLiter
@@ -25,7 +22,7 @@ import id.biojelan.app.core.formatRelativeDateTime
 import id.biojelan.app.core.formatRupiah
 import id.biojelan.app.core.firstNameOf
 import id.biojelan.app.core.formatRupiahCompact
-import id.biojelan.app.core.greeting
+import id.biojelan.app.core.agenInitials
 import id.biojelan.app.core.initialsOf
 import id.biojelan.app.data.remote.UserDto
 import id.biojelan.app.data.repository.PickupStatus
@@ -40,6 +37,7 @@ import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.FadeInItem
+import id.biojelan.app.ui.components.HomeHeader
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.NoteTone
 import id.biojelan.app.ui.components.PriceBand
@@ -73,10 +71,7 @@ fun AgenHomeTab(
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
     ) {
-        Column(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 16.dp)) {
-            Text(greeting() + ",", style = BioTheme.type.body, color = c.muted)
-            Text(firstName, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
+        HomeHeader(name = firstName, initials = agenInitials(user.name), role = s.roleAgent)
 
         PriceBand(state.price, s.priceCaptionAgen)
 

@@ -32,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.biojelan.app.core.firstNameOf
 import id.biojelan.app.core.formatLiter
@@ -40,7 +39,6 @@ import id.biojelan.app.core.formatNumber
 import id.biojelan.app.core.formatRelativeDateTime
 import id.biojelan.app.core.formatRupiah
 import id.biojelan.app.core.formatRupiahCompact
-import id.biojelan.app.core.greeting
 import id.biojelan.app.core.initialsOf
 import id.biojelan.app.data.remote.PickupStatusDto
 import id.biojelan.app.data.repository.PickupStatus
@@ -54,6 +52,7 @@ import id.biojelan.app.ui.components.rememberHeldLoading
 import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.FadeInItem
+import id.biojelan.app.ui.components.HomeHeader
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.SectionHead
@@ -81,12 +80,7 @@ fun DriverHomeTab(
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
     ) {
-        Row(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(greeting() + ",", style = BioTheme.type.body, color = c.muted)
-                Text(firstName, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
+        HomeHeader(name = firstName, initials = initialsOf(name), role = s.roleDriver)
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(state.todayCount.toString(), s.todayLabel, Modifier.weight(1f))

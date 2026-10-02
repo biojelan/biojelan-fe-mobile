@@ -5,6 +5,7 @@ import id.biojelan.app.core.changedStatus
 import id.biojelan.app.core.isToday
 import id.biojelan.app.core.parseIsoMillis
 import id.biojelan.app.core.shouldAnnounceNewAssignment
+import id.biojelan.app.data.local.LiveAlerts
 import id.biojelan.app.data.remote.ApiResult
 import id.biojelan.app.data.remote.DriverTransactionDto
 import id.biojelan.app.data.remote.PickupStatusDto
@@ -58,6 +59,7 @@ class DriverViewModel(
     private val pickups: PickupRepository,
     private val users: UserRepository,
     session: SessionManager,
+    override val liveAlerts: LiveAlerts,
 ) : BaseViewModel() {
     private val _state = MutableStateFlow(DriverUiState())
     val state: StateFlow<DriverUiState> = _state.asStateFlow()
@@ -100,7 +102,7 @@ class DriverViewModel(
                         previousId = previous.pickup?.pickupId,
                         incomingId = incoming?.pickupId,
                     )
-                    if (announce) toast("Ada penugasan jemput baru dari Kilang")
+                    if (announce) alert("Ada penugasan jemput baru dari Kilang")
                 }
             }
             val result = transactions.driverTransactions()
@@ -110,7 +112,7 @@ class DriverViewModel(
                 _state.update { it.copy(transactions = sorted, loading = false, error = null) }
                 val changed = changedStatus(before, sorted, id = { it.transactionId }, status = { it.status })
                 if (changed.isNotEmpty()) {
-                    toast(
+                    alert(
                         if (changed.size > 1) "Status ${changed.size} permintaan Anda diperbarui"
                         else when (changed.first().txStatus) {
                             TxStatus.Accepted -> "Agen menerima permintaan Anda"

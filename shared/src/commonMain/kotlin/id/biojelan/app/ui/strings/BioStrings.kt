@@ -253,6 +253,14 @@ interface BioStrings {
     val sectionSettings: String
     val darkMode: String
     val darkModeHint: String
+    val liveAlertsTitle: String
+    val liveAlertsHint: String
+    val alertsOn: String
+    val alertsOff: String
+    val notificationsTitle: String
+    val notificationsEmpty: String
+    val notificationsEmptyHint: String
+    val notificationsClear: String
     val labelPhone: String
     val labelIdAgent: String
     val labelIdClient: String

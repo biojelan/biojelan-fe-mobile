@@ -69,6 +69,15 @@ object BioIcons {
     val Eye by lazy { icon("eye", "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z", "M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6z") }
     val EyeOff by lazy { icon("eyeOff", "M17.9 17.9A10 10 0 0 1 12 19c-7 0-10-7-10-7a18.5 18.5 0 0 1 5-5.9", "M9.9 4.2A9 9 0 0 1 12 4c7 0 10 7 10 7a18.5 18.5 0 0 1-2.2 3.2", "M1 1l22 22") }
     val Bell by lazy { icon("bell", "M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9", "M13.7 21a2 2 0 0 1-3.4 0") }
+    val BellOff by lazy {
+        icon(
+            "bellOff",
+            "M13.7 21a2 2 0 0 1-3.4 0",
+            "M18.6 14.6C18.2 13 18 10.8 18 8a6 6 0 0 0-9.3-5",
+            "M6.3 6.3A6 6 0 0 0 6 8c0 7-3 9-3 9h11",
+            "M2 2l20 20",
+        )
+    }
     val Trash by lazy { icon("trash", "M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6") }
     val Edit by lazy { icon("edit", "M12 20h9", "M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z") }
     val Store by lazy { icon("store", "M3 9l1-5h16l1 5", "M3 9v11h18V9", "M3 9h18", "M9 20v-6h6v6") }

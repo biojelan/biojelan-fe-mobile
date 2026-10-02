@@ -41,7 +41,7 @@ import kotlin.math.sin
 
 private val OilLight = Color(0xFFEBC265)
 
-private fun waveFill(w: Float, h: Float, baseY: Float, amp: Float, length: Float, phase: Float): Path = Path().apply {
+internal fun waveFill(w: Float, h: Float, baseY: Float, amp: Float, length: Float, phase: Float): Path = Path().apply {
     moveTo(0f, h)
     lineTo(0f, baseY)
     var x = 0f

@@ -30,7 +30,7 @@ import id.biojelan.app.core.agenInitials
 import id.biojelan.app.core.firstNameOf
 import id.biojelan.app.core.formatLiter
 import id.biojelan.app.core.formatRupiah
-import id.biojelan.app.core.greeting
+import id.biojelan.app.core.initialsOf
 import id.biojelan.app.data.remote.AgenSummaryDto
 import id.biojelan.app.data.remote.TransactionDto
 import id.biojelan.app.ui.Viewer
@@ -39,6 +39,7 @@ import id.biojelan.app.ui.components.AvatarBox
 import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.ErrorBlock
+import id.biojelan.app.ui.components.HomeHeader
 import id.biojelan.app.ui.components.LoadingBlock
 import id.biojelan.app.ui.components.PriceBand
 import id.biojelan.app.ui.components.ScreenPad
@@ -64,16 +65,17 @@ fun KlienHomeTab(
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
     ) {
-        Row(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(greeting() + ",", style = BioTheme.type.body, color = c.muted)
-                Text(firstName, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            CircleIconButton(
-                BioIcons.Refresh, onClick = vm::manualRefresh, contentDescription = s.reload,
-                loading = state.txLoading || state.agensLoading,
-            )
-        }
+        HomeHeader(
+            name = firstName,
+            initials = initialsOf(name),
+            role = s.roleClient,
+            trailing = {
+                CircleIconButton(
+                    BioIcons.Refresh, onClick = vm::manualRefresh, contentDescription = s.reload,
+                    loading = state.txLoading || state.agensLoading,
+                )
+            },
+        )
 
         PriceBand(state.price, s.priceCaption)
 

@@ -1,6 +1,7 @@
 package id.biojelan.app.data.repository
 
 import id.biojelan.app.core.AppConfig
+import id.biojelan.app.data.local.LiveAlerts
 import id.biojelan.app.data.local.SessionStore
 import id.biojelan.app.data.remote.UserDto
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,7 @@ sealed interface SessionState {
 class SessionManager(
     private val store: SessionStore,
     private val json: Json,
+    private val alerts: LiveAlerts,
 ) {
     private val _state = MutableStateFlow<SessionState>(SessionState.Loading)
     val state: StateFlow<SessionState> = _state.asStateFlow()
@@ -90,6 +92,7 @@ class SessionManager(
 
     fun clear() {
         store.clear()
+        alerts.clearInbox()
         _state.value = SessionState.LoggedOut
     }
 }

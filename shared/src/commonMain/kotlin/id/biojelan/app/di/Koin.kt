@@ -2,6 +2,7 @@ package id.biojelan.app.di
 
 import com.russhwolf.settings.Settings
 import id.biojelan.app.core.AppConfig
+import id.biojelan.app.data.local.LiveAlerts
 import id.biojelan.app.data.local.SessionStore
 import id.biojelan.app.data.remote.ApiClient
 import id.biojelan.app.data.repository.AuthRepository
@@ -47,8 +48,9 @@ private val dataModule = module {
     }
     single<Settings> { Settings() }
     single { SessionStore(get()) }
+    single { LiveAlerts(get()) }
     single { ThemeController(get()) }
-    single { SessionManager(get(), get()) }
+    single { SessionManager(get(), get(), get()) }
     single { ApiClient(get(), get(), get()) }
     single<PriceProvider> { ApiPriceProvider(get(), get()) }
     single { AuthRepository(get(), get(), get()) }

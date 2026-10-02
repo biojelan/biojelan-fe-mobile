@@ -59,6 +59,7 @@ import id.biojelan.app.ui.icons.BioIcons
 import id.biojelan.app.ui.strings.BioText
 import id.biojelan.app.ui.theme.BioTheme
 import id.biojelan.app.ui.theme.ThemeController
+import id.biojelan.app.data.local.LiveAlerts
 import org.koin.compose.koinInject
 
 private enum class ProfileSheet { None, Edit, Password, Delete }
@@ -72,6 +73,8 @@ fun ProfileTab(user: UserDto, account: AccountViewModel) {
     val busy by account.busy.collectAsStateWithLifecycle()
     val themeController: ThemeController = koinInject()
     val isDark by themeController.isDark.collectAsStateWithLifecycle()
+    val liveAlerts: LiveAlerts = koinInject()
+    val alertsOn by liveAlerts.enabled.collectAsStateWithLifecycle()
     val agen = user.agen
     val isDriver = user.roleId == AppConfig.ROLE_ID_DRIVER
     val roleLabel = when {
@@ -137,6 +140,12 @@ fun ProfileTab(user: UserDto, account: AccountViewModel) {
                 BioIcons.Moon, s.darkMode, value = s.darkModeHint,
                 onClick = { themeController.setDark(!isDark) },
                 trailing = { BioSwitch(checked = isDark, onCheckedChange = themeController::setDark) },
+            )
+            HairLine()
+            ProfileRow(
+                if (alertsOn) BioIcons.Bell else BioIcons.BellOff, s.liveAlertsTitle, value = s.liveAlertsHint,
+                onClick = liveAlerts::toggle,
+                trailing = { BioSwitch(checked = alertsOn, onCheckedChange = liveAlerts::setEnabled) },
             )
             HairLine()
             ProfileRow(BioIcons.Logout, s.logout, tint = c.rust, onClick = { if (!busy) account.logout() })

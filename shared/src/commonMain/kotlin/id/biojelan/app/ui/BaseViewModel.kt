@@ -6,6 +6,7 @@ import id.biojelan.app.core.AppConfig
 import id.biojelan.app.core.AutoRefreshGate
 import id.biojelan.app.core.DedupeWindow
 import id.biojelan.app.core.nowEpochMillis
+import id.biojelan.app.data.local.LiveAlerts
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -20,6 +21,20 @@ abstract class BaseViewModel : ViewModel() {
 
     protected fun toast(text: String) {
         if (toastDedupe.shouldEmit(text)) _messages.tryEmit(text)
+    }
+
+    /** Pusat notifikasi. Diisi role yang punya polling; null = tidak ada notifikasi. */
+    protected open val liveAlerts: LiveAlerts? get() = null
+
+    /**
+     * Kejadian yang datang dari luar (transaksi/permintaan/penugasan baru yang ditemukan polling). Selalu
+     * dicatat ke kotak masuk (lonceng); toast-nya saja yang mengikuti toggle. Umpan balik atas aksi pengguna
+     * sendiri (terima, tolak, gagal muat) tetap pakai [toast].
+     */
+    protected fun alert(text: String) {
+        val alerts = liveAlerts
+        alerts?.record(text)
+        if (alerts == null || alerts.enabled.value) toast(text)
     }
 
     /** Umpan balik refresh manual (tombol muat ulang) yang berhasil tanpa error. */

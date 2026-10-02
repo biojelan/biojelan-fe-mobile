@@ -37,9 +37,24 @@ class SessionStore(private val settings: Settings) {
             if (value == null) settings.remove(KEY_LANGUAGE) else settings.putString(KEY_LANGUAGE, value)
         }
 
+    /** Notifikasi transaksi masuk (toast saat polling menemukan yang baru). Null = belum diatur (default aktif). */
+    var liveAlerts: Boolean?
+        get() = settings.getBooleanOrNull(KEY_LIVE_ALERTS)
+        set(value) {
+            if (value == null) settings.remove(KEY_LIVE_ALERTS) else settings.putBoolean(KEY_LIVE_ALERTS, value)
+        }
+
+    /** Riwayat notifikasi (JSON). Milik pengguna yang sedang login, jadi ikut dihapus saat logout. */
+    var alertsJson: String?
+        get() = settings.getStringOrNull(KEY_ALERTS)
+        set(value) {
+            if (value == null) settings.remove(KEY_ALERTS) else settings.putString(KEY_ALERTS, value)
+        }
+
     fun clear() {
         settings.remove(KEY_TOKEN)
         settings.remove(KEY_USER)
+        settings.remove(KEY_ALERTS)
         // Theme & language preferences intentionally NOT cleared on logout
     }
 
@@ -48,5 +63,7 @@ class SessionStore(private val settings: Settings) {
         const val KEY_USER = "session.user"
         const val KEY_THEME = "pref.theme"
         const val KEY_LANGUAGE = "pref.language"
+        const val KEY_LIVE_ALERTS = "pref.live_alerts"
+        const val KEY_ALERTS = "session.alerts"
     }
 }

@@ -4,6 +4,7 @@ import kotlin.math.abs
 import kotlin.math.roundToLong
 
 private const val MS_PER_DAY = 86_400_000L
+private val DAYS_ID = listOf("Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu")
 private val MONTHS_ID = listOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
 
 // ---------------------------------------------------------------- angka
@@ -167,6 +168,21 @@ fun formatRelativeDateTime(
     }
 }
 
+/** Sama seperti [formatRelativeDateTime] tapi dari epoch millis: "Hari ini, 10.42" / "Kemarin, 16.20" / "7 Agu 2026, 10.42". */
+fun formatRelativeMillis(
+    millis: Long,
+    nowMillis: Long = nowEpochMillis(),
+    offsetSeconds: Int = localUtcOffsetSeconds(),
+): String {
+    val p = localParts(millis, offsetSeconds)
+    val today = localParts(nowMillis, offsetSeconds).epochDay
+    return when (p.epochDay) {
+        today -> "Hari ini, " + timePart(p)
+        today - 1 -> "Kemarin, " + timePart(p)
+        else -> datePart(p) + ", " + timePart(p)
+    }
+}
+
 /** "10.42" — jam lokal saja. */
 fun formatTimeOnly(iso: String?, offsetSeconds: Int = localUtcOffsetSeconds()): String {
     val ms = parseIsoMillis(iso) ?: return ""
@@ -217,4 +233,11 @@ fun greeting(nowMillis: Long = nowEpochMillis(), offsetSeconds: Int = localUtcOf
         hour < 18 -> "Selamat sore"
         else -> "Selamat malam"
     }
+}
+
+/** "Jumat, 2 Okt" menurut tanggal lokal perangkat (1 Jan 1970 = Kamis). */
+fun formatTodayLabel(nowMillis: Long = nowEpochMillis(), offsetSeconds: Int = localUtcOffsetSeconds()): String {
+    val p = localParts(nowMillis, offsetSeconds)
+    val weekday = DAYS_ID[(p.epochDay + 3).mod(7L).toInt()]
+    return "$weekday, ${p.day} ${MONTHS_ID[p.month - 1]}"
 }
