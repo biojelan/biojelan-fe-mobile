@@ -38,7 +38,7 @@ fun AgenFlow(vm: AgenViewModel = koinViewModel(), account: AccountViewModel = ko
     val tabs = listOf(
         TabItem(s.tabHome, BioIcons.Home),
         TabItem(s.tabTransactions, BioIcons.Receipt),
-        TabItem(s.tabStock, BioIcons.Drop),
+        TabItem(s.tabStock, BioIcons.Jerrycan),
         TabItem(s.tabProfile, BioIcons.User),
     )
     val state by vm.state.collectAsStateWithLifecycle()

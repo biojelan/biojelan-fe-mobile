@@ -35,6 +35,16 @@ object BioIcons {
 
     val Drop by lazy { icon("drop", "M12 2C8 8 4 12.2 4 16a8 8 0 0 0 16 0c0-3.8-4-8-8-14z", stroke = 1.7f) }
     val DropFilled by lazy { icon("dropFilled", "M12 2C8 8 4 12.2 4 16a8 8 0 0 0 16 0c0-3.8-4-8-8-14z", filled = true) }
+    val Jerrycan by lazy {
+        icon(
+            "jerrycan",
+            "M5 10.5Q5 8.5 7 8.5H13L19 11.5V19Q19 21 17 21H7Q5 21 5 19Z",
+            "M15 9V4.8h3.2V10.2",
+            "M7.5 8.5V6.2Q7.5 5 8.7 5H11Q12.2 5 12.2 6.2V8.5",
+            "M5 15.5q1.75-1.3 3.5 0t3.5 0t3.5 0t3.5 0",
+            stroke = 1.7f,
+        )
+    }
     val Pin by lazy { icon("pin", "M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z", "M12 7.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 1 0 0-4.8z") }
     val Clock by lazy { icon("clock", "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 1 0 0-17z", "M12 8v4l3 2") }
     val Chat by lazy { icon("chat", "M21 11.5a8.5 8.5 0 0 1-12.4 7.6L4 20l1-4.4A8.5 8.5 0 1 1 21 11.5z") }
