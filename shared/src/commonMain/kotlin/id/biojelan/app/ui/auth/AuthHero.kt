@@ -127,6 +127,13 @@ private const val FALL_DISTANCE = 430f   // jatuh dari luar bingkai atas
 private const val RIPPLE_MIN = 34f
 private const val RIPPLE_MAX = 340f
 
+// Timing jatuhnya tetesan. Ubah FALL_MILLIS untuk lebih cepat/lambat; splash & riak otomatis menyusul.
+private const val DROP_DELAY_MILLIS = 260L
+private const val FALL_MILLIS = 1200            // sebelumnya 560
+private const val SPLASH_MILLIS = 1100
+private const val RIPPLE_MILLIS = 7200          // sebelumnya 4200 (makin besar = riak makin lambat)
+private const val RIPPLE_COUNT = 2              // sebelumnya 3 (lebih sedikit = tidak saling tumpuk)
+
 private val Gold = Color(0xFFF0C35E)
 private val GoldMid = Color(0xFFD69A2E)
 private val GoldDeep = Color(0xFFA8701D)
@@ -231,7 +238,7 @@ internal fun AuthHero(
     val statusTopPx = with(LocalDensity.current) { statusTop.toPx() }
 
     val loop = rememberInfiniteTransition(label = "hero-loop")
-    val ripple = loop.animateFloat(0f, 1f, infiniteRepeatable(tween(4200, easing = LinearEasing)), label = "ripple")
+    val ripple = loop.animateFloat(0f, 1f, infiniteRepeatable(tween(RIPPLE_MILLIS, easing = LinearEasing)), label = "ripple")
     val sweep = loop.animateFloat(0f, 1f, infiniteRepeatable(tween(36000, easing = LinearEasing)), label = "sweep")
     val bob = loop.animateFloat(0f, 1f, infiniteRepeatable(tween(3600, easing = LinearEasing)), label = "bob")
 
@@ -240,17 +247,17 @@ internal fun AuthHero(
     val splash = remember { Animatable(0f) }     // cincin kejut satu kali saat mendarat
     val rippleGate = remember { Animatable(0f) } // riak berulang baru "menyala" setelah mendarat
     LaunchedEffect(Unit) {
-        delay(260)
-        fall.animateTo(1f, tween(560, easing = CubicBezierEasing(0.5f, 0f, 0.9f, 0.5f)))
+        delay(DROP_DELAY_MILLIS)
+        fall.animateTo(1f, tween(FALL_MILLIS, easing = CubicBezierEasing(0.5f, 0f, 0.9f, 0.5f)))
         impact.snapTo(1f)
         impact.animateTo(0f, spring(dampingRatio = 0.3f, stiffness = Spring.StiffnessLow))
     }
     LaunchedEffect(Unit) {
-        delay(820)
-        splash.animateTo(1f, tween(1100, easing = LinearEasing))
+        delay(DROP_DELAY_MILLIS + FALL_MILLIS)
+        splash.animateTo(1f, tween(SPLASH_MILLIS, easing = LinearEasing))
     }
     LaunchedEffect(Unit) {
-        delay(900)
+        delay(DROP_DELAY_MILLIS + FALL_MILLIS + SPLASH_MILLIS)   // riak mulai setelah cincin kejut selesai
         rippleGate.animateTo(1f, tween(900, easing = FastOutSlowInEasing))
     }
 
@@ -274,8 +281,7 @@ internal fun AuthHero(
         label = "hero-ratio",
     )
     val frame = if (bleed) {
-        // clipToBounds: cincin/riak digambar lebih besar dari hero, sebelumnya dipotong oleh animateContentSize.
-        modifier.fillMaxWidth().height(heroHeight).clipToBounds()
+        modifier.fillMaxWidth().height(heroHeight).clipToBounds()  // Canvas tidak clip otomatis: tanpa ini ring tembus ke form
     } else {
         modifier
             .fillMaxWidth()
@@ -310,8 +316,8 @@ internal fun AuthHero(
             val gate = rippleGate.value
 
             // riak: tiga gelombang berselang, melebar lalu memudar
-            for (i in 0 until 3) {
-                val p = (ripple.value + i / 3f) % 1f
+            for (i in 0 until RIPPLE_COUNT) {
+                val p = (ripple.value + i / RIPPLE_COUNT.toFloat()) % 1f
                 val r = RIPPLE_MIN + (RIPPLE_MAX - RIPPLE_MIN) * (1f - (1f - p) * (1f - p))
                 val a = (1f - p).pow(1.6f) * 0.8f * gate
                 drawOval(
