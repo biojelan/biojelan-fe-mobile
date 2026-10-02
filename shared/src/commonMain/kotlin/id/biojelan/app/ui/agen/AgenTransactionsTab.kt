@@ -87,7 +87,7 @@ fun AgenTransactionsTab(state: AgenUiState, vm: AgenViewModel, onNewTransaction:
         ) {
             item {
                 ScreenTopBar(s.transactionsTitle, actions = {
-                    CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload)
+                    CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload, loading = state.loading)
                 })
             }
             item {
@@ -135,6 +135,8 @@ fun AgenTransactionsTab(state: AgenUiState, vm: AgenViewModel, onNewTransaction:
                     }
                 }
                 when {
+                    state.driverTxError != null && state.driverTransactions.isEmpty() ->
+                        item { ErrorBlock(state.driverTxError, vm::refresh) }
                     state.driverTransactions.isEmpty() -> item {
                         EmptyBlock(BioIcons.Truck, s.noTransactionsTitle, s.agenDriverNoTransactionsHint)
                     }

@@ -67,7 +67,7 @@ fun KlienHistoryTab(state: KlienUiState, vm: KlienViewModel) {
     ) {
         item {
             ScreenTopBar(s.historyTitle, actions = {
-                CircleIconButton(BioIcons.Refresh, onClick = vm::loadTransactions, contentDescription = s.reload)
+                CircleIconButton(BioIcons.Refresh, onClick = vm::refreshAll, contentDescription = s.reload, loading = state.txLoading)
             })
         }
         item {

@@ -49,6 +49,7 @@ import id.biojelan.app.ui.chipKind
 import id.biojelan.app.ui.components.BioButton
 import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.BtnStyle
+import id.biojelan.app.ui.components.rememberHeldLoading
 import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.FadeInItem
@@ -145,6 +146,7 @@ fun DriverHomeTab(
         BioButton(
             s.reload, vm::refresh, Modifier.fillMaxWidth(),
             style = BtnStyle.Outline,
+            loading = rememberHeldLoading(state.loading),
             icon = BioIcons.Refresh,
         )
     }

@@ -16,25 +16,16 @@ object AppConfig {
     const val REQUEST_TIMEOUT_MS = 20_000L
 
     /**
-     * Aktifkan mode fallback: API call yang gagal karena JARINGAN (timeout, tidak bisa connect) otomatis
-     * dijawab mock, supaya app tetap bisa dipakai meski backend tidak terjangkau. Kegagalan karena SERVER
-     * (401/422/500 dsb.) tetap ditampilkan apa adanya, bukan fallback.
-     *
-     * Set ke `false` begitu backend sudah live dan stabil (atau untuk debugging integrasi backend).
+     * Jeda antar auto-refresh berkala (data transaksi/approval) selama layar aktif di depan. Polling otomatis
+     * berhenti saat app di background dan langsung memuat ulang begitu app dibuka lagi.
      */
-    const val ENABLE_FALLBACK = true
+    const val AUTO_REFRESH_INTERVAL_MS = 15_000L
+
+    /** Jarak minimum antar dua auto-refresh, supaya buka-tutup app berulang tidak menembak server terus. */
+    const val AUTO_REFRESH_MIN_GAP_MS = 5_000L
 
     /** `role_id` Driver di backend (RoleSeeder: 1-4 kilang, 5 driver, 6 agent, 7 client). */
     const val ROLE_ID_DRIVER = 5
-
-    /**
-     * Transaksi Driver↔Agen dan Pickup sudah live semua di backend dan sudah dicocokkan field-by-field
-     * (lihat `DriverTransactionRepository` & `PickupRepository`), jadi tidak ada lagi jalur yang dipaksa
-     * mock di luar [ENABLE_FALLBACK] biasa. Dipertahankan sebagai saklar darurat: set `true` untuk memaksa
-     * endpoint pickup balik ke mock tanpa perlu mengubah kode lain, kalau ternyata ada sesuatu yang belum
-     * cocok pas dites langsung ke server.
-     */
-    const val MOCK_PICKUP_API = false
 
     /** Mode tema default: "light". Gelap hanya aktif kalau pengguna menyalakan switch di Profil. */
     const val DEFAULT_THEME = "light"

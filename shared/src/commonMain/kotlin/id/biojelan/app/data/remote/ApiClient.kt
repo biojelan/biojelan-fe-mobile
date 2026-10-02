@@ -2,7 +2,6 @@ package id.biojelan.app.data.remote
 
 import id.biojelan.app.core.AppConfig
 import id.biojelan.app.data.local.SessionStore
-import id.biojelan.app.data.mock.MockApiClient
 import io.ktor.client.HttpClient
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
@@ -34,7 +33,6 @@ class ApiClient(
     private val http: HttpClient,
     private val json: Json,
     private val store: SessionStore,
-    private val mockClient: MockApiClient,
 ) {
     /** Dipanggil saat server menolak token (sesi berakhir). Di-set oleh SessionManager. */
     var onUnauthorized: (() -> Unit)? = null
@@ -50,11 +48,6 @@ class ApiClient(
         val token = store.token
         if (authenticated && token.isNullOrBlank()) {
             return ApiResult.Failure(MSG_SESSION_EXPIRED, ApiResult.Kind.Unauthorized)
-        }
-        // Pickup belum ada di backend (server akan 404, bukan error jaringan) -> jawab dari mock selama flag
-        // aktif. Transaksi Driver↔Agen TIDAK di sini lagi: sudah live, lewat jalur ENABLE_FALLBACK di bawah.
-        if (AppConfig.MOCK_PICKUP_API && mockClient.handlesPickupFlow(method, path)) {
-            return mockClient.handle(method, path, token, bodyJson, parse)
         }
         return try {
             val response = http.request(AppConfig.BASE_URL + path) {
@@ -75,11 +68,8 @@ class ApiClient(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            if (AppConfig.ENABLE_FALLBACK) {
-                mockClient.handle(method, path, token, bodyJson, parse)
-            } else {
-                ApiResult.Failure(MSG_NETWORK, ApiResult.Kind.Network)
-            }
+            // Timeout / tidak bisa connect: laporkan apa adanya, tidak pernah diganti data contoh.
+            ApiResult.Failure(MSG_NETWORK, ApiResult.Kind.Network)
         }
     }
 

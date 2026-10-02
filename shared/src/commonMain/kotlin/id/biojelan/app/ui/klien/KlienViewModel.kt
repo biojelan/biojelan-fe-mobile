@@ -2,6 +2,7 @@ package id.biojelan.app.ui.klien
 
 import androidx.lifecycle.viewModelScope
 import id.biojelan.app.core.AppConfig
+import id.biojelan.app.core.hasNewActionable
 import id.biojelan.app.core.parseIsoMillis
 import id.biojelan.app.data.remote.AgenSummaryDto
 import id.biojelan.app.data.remote.ApiResult
@@ -65,6 +66,26 @@ class KlienViewModel(
         refreshAll()
     }
 
+    override fun canAutoRefresh(): Boolean = _state.value.let { it.busyTxId == null && !it.txLoading }
+
+    /**
+     * Polling berkala: cukup transaksi — dari situ kartu "terima/tolak" dan "persetujuan pembatalan" diturunkan.
+     * Daftar Agen & harga jarang berubah, jadi tidak ikut ditembak tiap putaran.
+     */
+    override suspend fun refreshSilently() {
+        val result = transactions.klienTransactions()
+        if (result !is ApiResult.Success) return // gagal: biarkan data lama, coba lagi putaran berikutnya
+        val sorted = result.data.sortedByDescending { tx -> parseIsoMillis(tx.createdAt) ?: 0L }
+        val before = _state.value.transactions
+        _state.update { it.copy(transactions = sorted, txLoading = false, txError = null) }
+        val hasNew = hasNewActionable(
+            before, sorted,
+            key = { "${it.transactionId}:${it.status}" },
+            actionable = { it.txStatus == TxStatus.Pending || it.txStatus == TxStatus.CancelRequested },
+        )
+        if (hasNew) toast("Ada transaksi baru yang menunggu persetujuan Anda")
+    }
+
     fun refreshAll() {
         loadAgens()
         loadTransactions()
@@ -76,16 +97,23 @@ class KlienViewModel(
 
     fun loadAgens() {
         viewModelScope.launch {
+            val hadData = _state.value.agens.isNotEmpty()
             _state.update { it.copy(agensLoading = true, agensError = null) }
             when (val result = users.listAgen()) {
                 is ApiResult.Success -> _state.update { it.copy(agens = result.data, agensLoading = false) }
-                is ApiResult.Failure -> _state.update { it.copy(agensLoading = false, agensError = result.message) }
+                is ApiResult.Failure -> {
+                    _state.update { it.copy(agensLoading = false, agensError = result.message) }
+                    // List sudah berisi → ErrorBlock tidak tampil, jadi kabari lewat toast.
+                    if (hadData) toast(result.message)
+                }
             }
         }
     }
 
     fun loadTransactions() {
+        cancelAutoRefresh()
         viewModelScope.launch {
+            val hadData = _state.value.transactions.isNotEmpty()
             _state.update { it.copy(txLoading = true, txError = null) }
             // Server mengenali Klien dari token, jadi tidak perlu klien_id.
             when (val result = transactions.klienTransactions()) {
@@ -93,7 +121,10 @@ class KlienViewModel(
                     val sorted = result.data.sortedByDescending { tx -> parseIsoMillis(tx.createdAt) ?: 0L }
                     _state.update { it.copy(transactions = sorted, txLoading = false) }
                 }
-                is ApiResult.Failure -> _state.update { it.copy(txLoading = false, txError = result.message) }
+                is ApiResult.Failure -> {
+                    _state.update { it.copy(txLoading = false, txError = result.message) }
+                    if (hadData) toast(result.message)
+                }
             }
         }
     }
@@ -123,6 +154,7 @@ class KlienViewModel(
         call: suspend () -> ApiResult<*>,
     ) {
         if (_state.value.busyTxId != null) return
+        cancelAutoRefresh()
         viewModelScope.launch {
             _state.update { it.copy(busyTxId = transactionId) }
             when (val result = call()) {

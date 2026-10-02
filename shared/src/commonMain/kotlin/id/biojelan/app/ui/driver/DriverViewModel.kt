@@ -1,8 +1,10 @@
 package id.biojelan.app.ui.driver
 
 import androidx.lifecycle.viewModelScope
+import id.biojelan.app.core.changedStatus
 import id.biojelan.app.core.isToday
 import id.biojelan.app.core.parseIsoMillis
+import id.biojelan.app.core.shouldAnnounceNewAssignment
 import id.biojelan.app.data.remote.ApiResult
 import id.biojelan.app.data.remote.DriverTransactionDto
 import id.biojelan.app.data.remote.PickupStatusDto
@@ -17,6 +19,7 @@ import id.biojelan.app.data.repository.UserRepository
 import id.biojelan.app.data.repository.TxStatus
 import id.biojelan.app.data.repository.txStatus
 import id.biojelan.app.ui.BaseViewModel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -75,9 +78,56 @@ class DriverViewModel(
      */
     fun agenLocation(agenId: String): AgenSummaryDto? = users.agenById(agenId)
 
+    override fun canAutoRefresh(): Boolean = _state.value.let {
+        !it.loading && !it.creating && !it.pickupBusy && it.busyTxId == null
+    }
+
+    /**
+     * Polling berkala: transaksi + penugasan pickup. Gagal-diam (data lama tetap tampil). Toast muncul kalau
+     * Agen baru saja menjawab permintaan Driver, atau ada penugasan jemput baru dari Kilang.
+     */
+    override suspend fun refreshSilently() {
+        coroutineScope {
+            launch {
+                val result = pickups.driverStatus()
+                if (result is ApiResult.Success) {
+                    val previous = _state.value
+                    val incoming = result.data
+                    _state.update { it.copy(pickup = incoming, pickupLoading = false, pickupError = null) }
+                    val announce = shouldAnnounceNewAssignment(
+                        previousLoadedOk = !previous.pickupLoading && previous.pickupError == null,
+                        previousId = previous.pickup?.pickupId,
+                        incomingId = incoming?.pickupId,
+                    )
+                    if (announce) toast("Ada penugasan jemput baru dari Kilang")
+                }
+            }
+            val result = transactions.driverTransactions()
+            if (result is ApiResult.Success) {
+                val sorted = result.data.sortedByDescending { tx -> parseIsoMillis(tx.createdAt) ?: 0L }
+                val before = _state.value.transactions
+                _state.update { it.copy(transactions = sorted, loading = false, error = null) }
+                val changed = changedStatus(before, sorted, id = { it.transactionId }, status = { it.status })
+                if (changed.isNotEmpty()) {
+                    toast(
+                        if (changed.size > 1) "Status ${changed.size} permintaan Anda diperbarui"
+                        else when (changed.first().txStatus) {
+                            TxStatus.Accepted -> "Agen menerima permintaan Anda"
+                            TxStatus.Rejected -> "Agen menolak permintaan Anda"
+                            TxStatus.Cancelled -> "Agen menyetujui pembatalan"
+                            else -> "Status permintaan Anda diperbarui"
+                        },
+                    )
+                }
+            }
+        }
+    }
+
     /** GET /api/driver/transactions dan GET /api/driver/pickup/status. */
     fun refresh() {
+        cancelAutoRefresh()
         viewModelScope.launch {
+            val hadData = _state.value.transactions.isNotEmpty()
             _state.update { it.copy(loading = true, error = null) }
             launch { refreshPickup() }
             when (val result = transactions.driverTransactions()) {
@@ -85,7 +135,10 @@ class DriverViewModel(
                     val sorted = result.data.sortedByDescending { tx -> parseIsoMillis(tx.createdAt) ?: 0L }
                     _state.update { it.copy(transactions = sorted, loading = false) }
                 }
-                is ApiResult.Failure -> _state.update { it.copy(loading = false, error = result.message) }
+                is ApiResult.Failure -> {
+                    _state.update { it.copy(loading = false, error = result.message) }
+                    if (hadData) toast(result.message)
+                }
             }
         }
     }
@@ -105,6 +158,7 @@ class DriverViewModel(
     fun updatePickup(status: PickupStatus) {
         val current = _state.value.pickup ?: return
         if (_state.value.pickupBusy) return
+        cancelAutoRefresh()
         viewModelScope.launch {
             _state.update { it.copy(pickupBusy = true) }
             when (val result = pickups.updateDriverStatus(current.pickupId, status)) {
@@ -138,6 +192,7 @@ class DriverViewModel(
      */
     fun createTransaction(contact: String, volumeLiter: Double, note: String, onSuccess: () -> Unit) {
         if (_state.value.creating) return
+        cancelAutoRefresh()
         val value = contact.trim()
         val isEmail = '@' in value
         viewModelScope.launch {
@@ -164,6 +219,7 @@ class DriverViewModel(
     /** POST /api/driver/transaction/{id}/cancel — hanya saat PENDING/ACCEPTED; Agen lalu menyetujui atau menolak. */
     fun requestCancel(transactionId: String, onDone: () -> Unit = {}) {
         if (_state.value.busyTxId != null) return
+        cancelAutoRefresh()
         viewModelScope.launch {
             _state.update { it.copy(busyTxId = transactionId) }
             when (val result = transactions.requestCancel(transactionId)) {

@@ -94,6 +94,7 @@ object IdStrings : BioStrings {
     // ============================================================ Agen Pickup
     override val pickupSectionTitle = "Status penjemputan"
     override val pickupNoneScheduled = "Belum ada penjemputan yang dijadwalkan Kilang."
+    override val driverRequestsLoadFailed = "Permintaan Driver gagal dimuat, daftar di bawah mungkin belum terbaru."
     override val pickupStatusAssigned = "Driver ditugaskan"
     override val pickupStatusOtw = "Driver dalam perjalanan"
     override val pickupStatusCompleted = "Penjemputan selesai"

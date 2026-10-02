@@ -73,7 +73,10 @@ fun KlienHomeTab(
                 Text(greeting() + ",", style = BioTheme.type.body, color = c.muted)
                 Text(firstName, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            CircleIconButton(BioIcons.Refresh, onClick = vm::refreshAll, contentDescription = s.reload)
+            CircleIconButton(
+                BioIcons.Refresh, onClick = vm::refreshAll, contentDescription = s.reload,
+                loading = state.txLoading || state.agensLoading,
+            )
         }
 
         PriceBand(state.price, s.priceCaption)

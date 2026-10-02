@@ -99,6 +99,7 @@ interface BioStrings {
     // ============================================================ Agen Pickup
     val pickupSectionTitle: String
     val pickupNoneScheduled: String
+    val driverRequestsLoadFailed: String
     val pickupStatusAssigned: String
     val pickupStatusOtw: String
     val pickupStatusCompleted: String

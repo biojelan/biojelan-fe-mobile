@@ -76,7 +76,7 @@ fun DriverTransactionsTab(state: DriverUiState, vm: DriverViewModel, onNewTransa
         ) {
             item {
                 ScreenTopBar(s.transactionsTitle, actions = {
-                    CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload)
+                    CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload, loading = state.loading)
                 })
             }
             item {

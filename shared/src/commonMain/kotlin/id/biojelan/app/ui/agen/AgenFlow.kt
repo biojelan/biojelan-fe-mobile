@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.biojelan.app.ui.account.AccountViewModel
 import id.biojelan.app.ui.account.ProfileTab
+import id.biojelan.app.ui.components.AutoRefresh
 import id.biojelan.app.ui.components.BioTabBar
 import id.biojelan.app.ui.components.CollectMessages
 import id.biojelan.app.ui.components.TabItem
@@ -48,6 +49,7 @@ fun AgenFlow(vm: AgenViewModel = koinViewModel(), account: AccountViewModel = ko
 
     CollectMessages(vm.messages, toast)
     CollectMessages(account.messages, toast)
+    AutoRefresh(onRefresh = vm::autoRefresh)
 
     Box(Modifier.fillMaxSize().background(c.paper)) {
         Column(Modifier.fillMaxSize()) {

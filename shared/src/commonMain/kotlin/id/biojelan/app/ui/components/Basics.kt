@@ -1,8 +1,14 @@
 package id.biojelan.app.ui.components
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -125,18 +131,32 @@ fun CircleIconButton(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     tint: Color = BioTheme.colors.primary,
+    /** True = ikon berputar dan klik diabaikan (mis. tombol refresh yang sedang memuat). */
+    loading: Boolean = false,
 ) {
     val c = BioTheme.colors
+    val spinning = rememberHeldLoading(loading)
     Box(
         modifier = modifier
             .size(38.dp)
             .background(c.surface, CircleShape)
             .border(1.dp, c.line, CircleShape)
             .clip(CircleShape)
-            .clickable(onClick = onClick),
+            .clickable(enabled = !spinning, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription, tint = tint, modifier = Modifier.size(18.dp))
+        if (spinning) {
+            // Transisi tak-berhingga hanya dibuat selama berputar, supaya tombol diam tidak recompose tiap frame.
+            val angle by rememberInfiniteTransition(label = "refreshSpin").animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(tween(800, easing = LinearEasing), RepeatMode.Restart),
+                label = "refreshAngle",
+            )
+            Icon(icon, contentDescription, tint = tint, modifier = Modifier.size(18.dp).rotate(angle))
+        } else {
+            Icon(icon, contentDescription, tint = tint, modifier = Modifier.size(18.dp))
+        }
     }
 }
 

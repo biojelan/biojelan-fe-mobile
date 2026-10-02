@@ -66,7 +66,7 @@ fun KlienLocatorTab(
     ) {
         item {
             ScreenTopBar(s.tabFindAgent, actions = {
-                CircleIconButton(BioIcons.Refresh, onClick = onRefresh, contentDescription = s.reload)
+                CircleIconButton(BioIcons.Refresh, onClick = onRefresh, contentDescription = s.reload, loading = state.agensLoading)
             })
         }
         item { SearchField(query, { query = it }, "Cari nama atau alamat Agen", Modifier.padding(horizontal = ScreenPad)) }

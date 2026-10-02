@@ -93,6 +93,7 @@ object EnStrings : BioStrings {
     // ============================================================ Agen Pickup
     override val pickupSectionTitle = "Pickup status"
     override val pickupNoneScheduled = "No pickup scheduled by Kilang yet."
+    override val driverRequestsLoadFailed = "Driver requests failed to load; what is shown below may be out of date."
     override val pickupStatusAssigned = "Driver assigned"
     override val pickupStatusOtw = "Driver on the way"
     override val pickupStatusCompleted = "Pickup completed"

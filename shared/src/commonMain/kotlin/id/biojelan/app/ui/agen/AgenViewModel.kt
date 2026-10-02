@@ -2,6 +2,7 @@ package id.biojelan.app.ui.agen
 
 import androidx.lifecycle.viewModelScope
 import id.biojelan.app.core.AppConfig
+import id.biojelan.app.core.hasNewActionable
 import id.biojelan.app.core.isToday
 import id.biojelan.app.core.parseIsoMillis
 import id.biojelan.app.data.remote.ApiResult
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -41,6 +43,10 @@ data class AgenUiState(
     val togglingOpen: Boolean = false,
     val pickup: PickupStatusDto? = null,
     val pickupLoading: Boolean = true,
+    /** Pesan error pemuatan status pickup terakhir; null = terakhir berhasil. Data [pickup] lama tetap dipertahankan. */
+    val pickupError: String? = null,
+    /** Pesan error pemuatan transaksi Driver terakhir; null = terakhir berhasil. */
+    val driverTxError: String? = null,
     /** Transaksi Driver → Agen (Driver mengambil minyak dari Agen ini). */
     val driverTransactions: List<DriverTransactionDto> = emptyList(),
     /** transaction_id transaksi Driver yang sedang diproses (terima/tolak/setujui batal/tolak batal). */
@@ -100,8 +106,36 @@ class AgenViewModel(
         refresh()
     }
 
+    override fun canAutoRefresh(): Boolean = _state.value.let {
+        !it.loading && !it.creating && !it.togglingOpen && it.busyTxId == null && it.busyDriverTxId == null
+    }
+
+    /**
+     * Polling berkala: transaksi Klien, permintaan Driver, status pickup, dan profil (stok). Harga tidak ikut
+     * (jarang berubah). Semua gagal-diam: data lama tetap tampil, tidak ada spinner/error baru.
+     */
+    override suspend fun refreshSilently() {
+        coroutineScope {
+            launch { users.refreshUser() }
+            launch {
+                val result = pickups.agenStatus()
+                if (result is ApiResult.Success) {
+                    _state.update { it.copy(pickup = result.data, pickupLoading = false, pickupError = null) }
+                }
+            }
+            launch { refreshDriverTx(silent = true) }
+            val result = transactions.agenTransactions()
+            if (result is ApiResult.Success) {
+                val sorted = result.data.sortedByDescending { tx -> parseIsoMillis(tx.createdAt) ?: 0L }
+                _state.update { it.copy(transactions = sorted, loading = false, error = null) }
+            }
+        }
+    }
+
     fun refresh() {
+        cancelAutoRefresh()
         viewModelScope.launch {
+            val hadData = _state.value.transactions.isNotEmpty()
             _state.update { it.copy(loading = true, error = null) }
             // Stok (`stock_liter`) ikut di GET /api/user, jadi ambil ulang profil bersamaan dengan transaksi.
             launch { users.refreshUser() }
@@ -117,7 +151,10 @@ class AgenViewModel(
                     val sorted = result.data.sortedByDescending { tx -> parseIsoMillis(tx.createdAt) ?: 0L }
                     _state.update { it.copy(transactions = sorted, loading = false) }
                 }
-                is ApiResult.Failure -> _state.update { it.copy(loading = false, error = result.message) }
+                is ApiResult.Failure -> {
+                    _state.update { it.copy(loading = false, error = result.message) }
+                    if (hadData) toast(result.message)
+                }
             }
         }
     }
@@ -169,6 +206,7 @@ class AgenViewModel(
      */
     fun createTransaction(contact: String, volumeLiter: Double, onSuccess: () -> Unit) {
         if (_state.value.creating) return
+        cancelAutoRefresh()
         val value = contact.trim()
         val isEmail = '@' in value
         viewModelScope.launch {
@@ -197,6 +235,7 @@ class AgenViewModel(
      */
     fun requestCancel(transactionId: String, onDone: () -> Unit = {}) {
         if (_state.value.busyTxId != null) return
+        cancelAutoRefresh()
         viewModelScope.launch {
             _state.update { it.copy(busyTxId = transactionId) }
             when (val result = transactions.requestCancel(transactionId)) {
@@ -215,13 +254,29 @@ class AgenViewModel(
      * GET /api/agent/driver/transactions. Bagian tambahan: kegagalan (mis. backend Driver belum ada) tidak
      * mengganggu tampilan transaksi Klien, daftar Driver cukup dibiarkan kosong.
      */
-    private suspend fun refreshDriverTx() {
+    /**
+     * GET transaksi Driver → Agen. [silent] = dipanggil polling: sukses boleh memunculkan toast permintaan baru,
+     * gagal tidak mengubah apa-apa. Kalau tidak silent, kegagalan dicatat di [AgenUiState.driverTxError] dan —
+     * bila daftar sudah berisi — dikabari lewat toast.
+     */
+    private suspend fun refreshDriverTx(silent: Boolean = false) {
         when (val result = driverTx.agentDriverTransactions()) {
             is ApiResult.Success -> {
                 val sorted = result.data.sortedByDescending { tx -> parseIsoMillis(tx.createdAt) ?: 0L }
-                _state.update { it.copy(driverTransactions = sorted) }
+                val before = _state.value.driverTransactions
+                _state.update { it.copy(driverTransactions = sorted, driverTxError = null) }
+                val hasNew = hasNewActionable(
+                    before, sorted,
+                    key = { "${it.transactionId}:${it.status}" },
+                    actionable = { it.txStatus == TxStatus.Pending || it.txStatus == TxStatus.CancelRequested },
+                )
+                if (silent && hasNew) toast("Ada permintaan Driver baru yang menunggu persetujuan Anda")
             }
-            is ApiResult.Failure -> Unit
+            is ApiResult.Failure -> if (!silent) {
+                val hadData = _state.value.driverTransactions.isNotEmpty()
+                _state.update { it.copy(driverTxError = result.message) }
+                if (hadData) toast(result.message)
+            }
         }
     }
 
@@ -248,6 +303,7 @@ class AgenViewModel(
 
     private fun actDriver(transactionId: String, successMessage: String, call: suspend () -> ApiResult<*>) {
         if (_state.value.busyDriverTxId != null) return
+        cancelAutoRefresh()
         viewModelScope.launch {
             _state.update { it.copy(busyDriverTxId = transactionId) }
             when (val result = call()) {
@@ -267,6 +323,7 @@ class AgenViewModel(
         val current = session.currentUser ?: return
         val agen = current.agen ?: return
         if (_state.value.togglingOpen) return
+        cancelAutoRefresh()
         viewModelScope.launch {
             _state.update { it.copy(togglingOpen = true) }
             val nextOpen = !agen.isOpen
@@ -280,13 +337,19 @@ class AgenViewModel(
 
     /**
      * GET /api/agen/pickup/status. Dipanggil bersamaan dengan [refresh]; kegagalan di sini tidak
-     * memblokir tampilan transaksi/profil — status penjemputan cuma disembunyikan (null).
+     * memblokir tampilan transaksi/profil. Data [AgenUiState.pickup] lama DIPERTAHANKAN (jangan di-null-kan:
+     * itu akan tampil sebagai "belum ada penjemputan" padahal cuma gagal memuat) dan errornya dicatat di
+     * [AgenUiState.pickupError].
      */
     private suspend fun refreshPickup() {
-        _state.update { it.copy(pickupLoading = true) }
+        _state.update { it.copy(pickupLoading = true, pickupError = null) }
         when (val result = pickups.agenStatus()) {
-            is ApiResult.Success -> _state.update { it.copy(pickup = result.data, pickupLoading = false) }
-            is ApiResult.Failure -> _state.update { it.copy(pickup = null, pickupLoading = false) }
+            is ApiResult.Success -> _state.update { it.copy(pickup = result.data, pickupLoading = false, pickupError = null) }
+            is ApiResult.Failure -> {
+                val hadPickup = _state.value.pickup != null
+                _state.update { it.copy(pickupLoading = false, pickupError = result.message) }
+                if (hadPickup) toast(result.message)
+            }
         }
     }
 }

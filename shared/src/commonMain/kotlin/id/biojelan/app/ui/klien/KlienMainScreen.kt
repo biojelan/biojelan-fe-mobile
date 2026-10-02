@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.biojelan.app.ui.account.AccountViewModel
 import id.biojelan.app.ui.account.ProfileTab
 import id.biojelan.app.ui.components.BioSheet
+import id.biojelan.app.ui.components.AutoRefresh
 import id.biojelan.app.ui.components.BioTabBar
 import id.biojelan.app.ui.components.CollectMessages
 import id.biojelan.app.ui.components.NoteBox
@@ -57,6 +58,7 @@ fun KlienMainScreen(
 
     CollectMessages(vm.messages, toast)
     CollectMessages(account.messages, toast)
+    AutoRefresh(onRefresh = vm::autoRefresh)
 
     Box(Modifier.fillMaxSize().background(c.paper)) {
         Column(Modifier.fillMaxSize()) {
@@ -70,7 +72,7 @@ fun KlienMainScreen(
                         onGoTo = { tab = it },
                         onShowId = { showId = true },
                     )
-                    1 -> KlienLocatorTab(state = state, onRefresh = vm::loadAgens, onOpenAgen = onOpenAgen)
+                    1 -> KlienLocatorTab(state = state, onRefresh = vm::refreshAll, onOpenAgen = onOpenAgen)
                     2 -> KlienHistoryTab(state = state, vm = vm)
                     else -> user?.let { ProfileTab(it, account) }
                 }

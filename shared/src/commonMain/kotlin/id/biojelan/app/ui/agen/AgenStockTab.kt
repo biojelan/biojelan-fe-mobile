@@ -38,6 +38,7 @@ import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.DropGauge
+import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.ScreenTopBar
@@ -64,7 +65,7 @@ fun AgenStockTab(state: AgenUiState, user: UserDto, vm: AgenViewModel) {
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
         ScreenTopBar(s.stockTitle, actions = {
-            CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload)
+            CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload, loading = state.loading)
         })
         Column(Modifier.padding(horizontal = ScreenPad), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(4.dp))
@@ -83,7 +84,7 @@ fun AgenStockTab(state: AgenUiState, user: UserDto, vm: AgenViewModel) {
 
         Column(Modifier.padding(horizontal = ScreenPad)) {
             SectionHead(s.pickupSectionTitle)
-            PickupStatusCard(state.pickup, state.pickupLoading)
+            PickupStatusCard(state.pickup, state.pickupLoading, state.pickupError, onRetry = vm::refresh)
         }
 
         Column(Modifier.padding(horizontal = ScreenPad)) {
@@ -110,6 +111,10 @@ fun AgenStockTab(state: AgenUiState, user: UserDto, vm: AgenViewModel) {
                         )
                     }
                 }
+            }
+            if (state.driverTxError != null && state.driverTransactions.isEmpty()) {
+                SectionHead(s.driverStockSection)
+                ErrorBlock(state.driverTxError, onRetry = vm::refresh)
             }
             if (state.driverTransactions.isNotEmpty()) {
                 SectionHead(s.driverStockSection)
@@ -141,7 +146,7 @@ fun AgenStockTab(state: AgenUiState, user: UserDto, vm: AgenViewModel) {
  * di atas karena Kilang bisa menjadwalkan penjemputan kapan saja, bukan cuma saat stok penuh.
  */
 @Composable
-private fun PickupStatusCard(pickup: PickupStatusDto?, loading: Boolean) {
+private fun PickupStatusCard(pickup: PickupStatusDto?, loading: Boolean, error: String?, onRetry: () -> Unit) {
     val c = BioTheme.colors
     val s = BioText.current
 
@@ -150,6 +155,9 @@ private fun PickupStatusCard(pickup: PickupStatusDto?, loading: Boolean) {
             Row(Modifier.fillMaxWidth().bioCard(16.dp).padding(20.dp), horizontalArrangement = Arrangement.Center) {
                 CircularProgressIndicator(color = c.primary, strokeWidth = 3.dp, modifier = Modifier.size(20.dp))
             }
+        } else if (error != null) {
+            // Gagal memuat ≠ tidak ada penjemputan: jangan tampilkan "belum dijadwalkan".
+            ErrorBlock(error, onRetry)
         } else {
             NoteBox(s.pickupNoneScheduled, icon = BioIcons.Truck)
         }
