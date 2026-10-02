@@ -85,9 +85,15 @@ class ApiClient(
         val looksFailed = message?.trimStart()?.startsWith("Failed", ignoreCase = true) == true
 
         if (!httpOk || successFlag == false || looksFailed) {
-            val unauthorized = status == 401 || message?.contains("unauthorized", ignoreCase = true) == true
+            // Hanya 401 yang berarti token ditolak. 403 = akun nonaktif / bukan peran yang sesuai: jangan paksa logout.
+            val unauthorized = status == 401 || (status != 403 && status != 429 && message?.contains("unauthorized", ignoreCase = true) == true)
+            val translated = when (status) {
+                403 -> MSG_FORBIDDEN
+                429 -> MSG_TOO_MANY
+                else -> translate(message)
+            }
             return ApiResult.Failure(
-                message = translate(message) ?: if (unauthorized) MSG_SESSION_EXPIRED else "Terjadi kesalahan pada server ($status).",
+                message = translated ?: if (unauthorized) MSG_SESSION_EXPIRED else "Terjadi kesalahan pada server ($status).",
                 kind = if (unauthorized) ApiResult.Kind.Unauthorized else ApiResult.Kind.Server,
                 httpStatus = status,
             )
@@ -120,6 +126,8 @@ class ApiClient(
     private companion object {
         const val MSG_NETWORK = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda."
         const val MSG_SESSION_EXPIRED = "Sesi Anda berakhir. Silakan masuk kembali."
+        const val MSG_FORBIDDEN = "Akun Anda tidak dapat mengakses fitur ini. Hubungi admin jika akun dinonaktifkan."
+        const val MSG_TOO_MANY = "Terlalu banyak percobaan. Coba lagi beberapa saat lagi."
 
         val KNOWN_MESSAGES = listOf(
             "User not registered" to "Akun belum terdaftar.",

@@ -114,6 +114,7 @@ object IdStrings : BioStrings {
     override val noTransactionsHint = "Tekan tombol + untuk mencatat penjualan dari Klien."
     override val transactionButton = "Transaksi"
     override val pendingAgenNote = "Menunggu Klien menerima atau menolak di app-nya."
+    override val guestTxAgenNote = "Transaksi tamu dicatat offline. Tidak ada persetujuan Klien, jadi tidak bisa dibatalkan dari app."
     override val cancelledAgenNote = "Transaksi ini dibatalkan. Stok Anda tidak berubah."
 
     override val labelTransactionId = "ID Transaksi"

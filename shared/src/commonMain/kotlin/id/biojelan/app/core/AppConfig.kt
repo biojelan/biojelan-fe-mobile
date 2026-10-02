@@ -27,6 +27,12 @@ object AppConfig {
     /** `role_id` Driver di backend (RoleSeeder: 1-4 kilang, 5 driver, 6 agent, 7 client). */
     const val ROLE_ID_DRIVER = 5
 
+    /**
+     * Email khusus yang dikenali backend sebagai transaksi tamu (`client_id` = null). Backend tidak punya
+     * field nama/telepon tamu, jadi identitas tamu dititipkan di `transaction_note`.
+     */
+    const val GUEST_CLIENT_EMAIL = "guest.client@biojelan.id"
+
     /** Mode tema default: "light". Gelap hanya aktif kalau pengguna menyalakan switch di Profil. */
     const val DEFAULT_THEME = "light"
 

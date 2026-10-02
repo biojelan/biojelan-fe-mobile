@@ -113,6 +113,7 @@ object EnStrings : BioStrings {
     override val noTransactionsHint = "Press the + button to record a sale from a Client."
     override val transactionButton = "Transaction"
     override val pendingAgenNote = "Waiting for the Client to accept or reject in their app."
+    override val guestTxAgenNote = "Guest transactions are recorded offline. There is no Client approval, so it cannot be cancelled from the app."
     override val cancelledAgenNote = "This transaction was cancelled. Your stock remains unchanged."
 
     override val labelTransactionId = "Transaction ID"

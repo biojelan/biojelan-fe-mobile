@@ -320,14 +320,20 @@ private fun AgenTxDetailSheet(
         )
         Spacer(Modifier.height(14.dp))
         when (tx.txStatus) {
-            TxStatus.Pending -> NoteBox(s.pendingAgenNote, tone = NoteTone.Amber)
+            TxStatus.Pending -> if (tx.klienId.isNotBlank()) NoteBox(s.pendingAgenNote, tone = NoteTone.Amber)
             TxStatus.CancelRequested -> NoteBox(s.cancelRequestedAgenNote, tone = NoteTone.Amber)
             TxStatus.Rejected -> NoteBox(s.rejectedAgenNote, tone = NoteTone.Rust, icon = BioIcons.Alert)
             TxStatus.Cancelled -> NoteBox(s.cancelledAgenNote, tone = NoteTone.Rust, icon = BioIcons.Alert)
             else -> Unit
         }
+        // Transaksi tamu tidak punya Klien yang bisa menyetujui pembatalan (status akan macet), jadi tidak dibatalkan dari app.
+        val isGuestTx = tx.klienId.isBlank()
+        if (isGuestTx) {
+            Spacer(Modifier.height(14.dp))
+            NoteBox(s.guestTxAgenNote, tone = NoteTone.Amber)
+        }
         // Server hanya mengizinkan pengajuan batal saat PENDING atau ACCEPTED.
-        if (tx.txStatus == TxStatus.Pending || tx.txStatus == TxStatus.Accepted) {
+        if (!isGuestTx && (tx.txStatus == TxStatus.Pending || tx.txStatus == TxStatus.Accepted)) {
             Spacer(Modifier.height(14.dp))
             BioButton(
                 if (confirmCancel) s.yesRequestCancel else s.requestCancel,
@@ -351,7 +357,7 @@ fun NewTransactionSheet(
     price: Long,
     creating: Boolean,
     vm: AgenViewModel,
-    onSubmit: (contact: String, volumeLiter: Double) -> Unit,
+    onSubmit: (contact: String, volumeLiter: Double, guestName: String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val c = BioTheme.colors
@@ -393,7 +399,7 @@ fun NewTransactionSheet(
         errors = found
         if (found.isEmpty() && volume != null) {
             val resolvedContact = if (mode == TxInputMode.Registered) contact.trim() else guestPhone.trim()
-            onSubmit(resolvedContact, volume)
+            onSubmit(resolvedContact, volume, if (mode == TxInputMode.Guest) guestName.trim() else null)
         }
     }
 

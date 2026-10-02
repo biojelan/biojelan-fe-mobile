@@ -74,8 +74,8 @@ fun AgenFlow(vm: AgenViewModel = koinViewModel(), account: AccountViewModel = ko
             price = state.price,
             creating = state.creating,
             vm = vm,
-            onSubmit = { contact, volume ->
-                vm.createTransaction(contact, volume) {
+            onSubmit = { contact, volume, guestName ->
+                vm.createTransaction(contact, volume, guestName) {
                     showNew = false
                     tab = 1
                 }

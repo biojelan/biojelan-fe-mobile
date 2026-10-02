@@ -25,6 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import id.biojelan.app.ui.components.BioButton
 import id.biojelan.app.ui.components.BioSheet
 import id.biojelan.app.ui.components.BioTabBar
@@ -33,21 +37,41 @@ import id.biojelan.app.ui.components.PriceBand
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.TabItem
 import id.biojelan.app.ui.icons.BioIcons
+import id.biojelan.app.ui.klien.AgenDetailRoute
+import id.biojelan.app.ui.klien.AgenDetailScreen
 import id.biojelan.app.ui.klien.KlienLocatorTab
 import id.biojelan.app.ui.klien.KlienUiState
 import id.biojelan.app.ui.strings.BioText
 import id.biojelan.app.ui.theme.BioTheme
+import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val LOCATOR_TAB_INDEX = 1
 
+@Serializable
+private object GuestMainRoute
+
 /**
  * Alur untuk pengunjung yang memilih "Lihat sebagai tamu": boleh melihat lokasi Agen dan
- * harga jelantah terkini (tab Cari Agen). Tab lain dan baris Agen memicu modal ajakan daftar
- * (menyamai perilaku prototype HTML).
+ * harga jelantah terkini (tab Cari Agen). Baris Agen tetap bisa dibuka ke halaman detail (petunjuk
+ * arah / kontak) karena tamu hanya bertransaksi offline; hanya tab lain yang memicu modal ajakan daftar.
  */
 @Composable
-fun GuestScreen(vm: GuestViewModel = koinViewModel()) {
+fun GuestScreen() {
+    val nav = rememberNavController()
+    NavHost(navController = nav, startDestination = GuestMainRoute) {
+        composable<GuestMainRoute> {
+            GuestMain(onOpenAgen = { nav.navigate(AgenDetailRoute(it)) })
+        }
+        composable<AgenDetailRoute> { entry ->
+            val route = entry.toRoute<AgenDetailRoute>()
+            AgenDetailScreen(agenId = route.agenId, onBack = { nav.popBackStack() })
+        }
+    }
+}
+
+@Composable
+private fun GuestMain(onOpenAgen: (String) -> Unit, vm: GuestViewModel = koinViewModel()) {
     val c = BioTheme.colors
     val s = BioText.current
     val guestTabs = listOf(
@@ -77,7 +101,8 @@ fun GuestScreen(vm: GuestViewModel = koinViewModel()) {
                                 agensError = state.error,
                             ),
                             onRefresh = vm::loadAgens,
-                            onOpenAgen = { showUpsell = true },
+                            onOpenAgen = onOpenAgen,
+                            expandableSheet = true,
                         )
                     }
                 }

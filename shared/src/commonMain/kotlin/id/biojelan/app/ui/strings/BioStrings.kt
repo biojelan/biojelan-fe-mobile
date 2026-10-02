@@ -119,6 +119,7 @@ interface BioStrings {
     val noTransactionsHint: String
     val transactionButton: String
     val pendingAgenNote: String
+    val guestTxAgenNote: String
     val cancelledAgenNote: String
 
     // ---- Transaction detail labels

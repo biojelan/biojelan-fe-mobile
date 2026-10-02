@@ -1,7 +1,9 @@
 package id.biojelan.app.data.remote
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 /*
  * DTO 1:1 dengan API-DOC (authentication.md, user.md, transaction_klien.md, transaction_agen.md) dan backend.
@@ -200,22 +202,27 @@ data class TransactionStatusDto(
  */
 @Serializable
 data class CreateDriverTransactionRequest(
-    @SerialName("agen_email") val agenEmail: String? = null,
-    @SerialName("agen_phone") val agenPhone: String? = null,
+    // Backend memvalidasi `agent_email` / `agent_phone` (ejaan Inggris), bukan `agen_*`.
+    @SerialName("agent_email") val agenEmail: String? = null,
+    @SerialName("agent_phone") val agenPhone: String? = null,
     @SerialName("volume_liter") val volumeLiter: Double,
     @SerialName("transaction_note") val transactionNote: String? = null,
 )
 
-/** Respons transaksi Driver → Agen (dipakai sisi Driver maupun sisi Agen penerima). */
+/**
+ * Respons transaksi Driver → Agen (dipakai sisi Driver maupun sisi Agen penerima).
+ * Backend mengirim `agent_id` / `agent_name`; `agen_*` tetap diterima kalau backend kelak diseragamkan.
+ */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class DriverTransactionDto(
     @SerialName("transaction_id") @Serializable(with = FlexibleStringSerializer::class)
     val transactionId: String = "",
     @SerialName("driver_id") @Serializable(with = FlexibleStringSerializer::class)
     val driverId: String = "",
-    @SerialName("agen_id") @Serializable(with = FlexibleStringSerializer::class)
+    @SerialName("agen_id") @JsonNames("agent_id") @Serializable(with = FlexibleStringSerializer::class)
     val agenId: String = "",
-    @SerialName("agen_name") val agenName: String = "",
+    @SerialName("agen_name") @JsonNames("agent_name") val agenName: String = "",
     @SerialName("volume_liter") @Serializable(with = FlexibleDoubleSerializer::class)
     val volumeLiter: Double = 0.0,
     @Serializable(with = FlexibleLongSerializer::class) val price: Long = 0L,
@@ -229,7 +236,7 @@ data class DriverTransactionDto(
 
 // ============================================================ Price
 
-/** GET /api/price — harga Klien berlaku hari ini (`price_type` selalu "KLIEN" untuk endpoint publik ini). */
+/** GET /api/price — harga Klien berlaku hari ini (`price_type` selalu "CLIENT" untuk endpoint publik ini). */
 @Serializable
 data class PriceDto(
     @SerialName("price_id") val priceId: String = "",
@@ -245,7 +252,7 @@ data class PriceDto(
 /**
  * Status penjemputan (pickup.md): GET /api/agen/pickup/status (Agen), GET & PATCH /api/driver/pickup/status
  * (Driver). Respons Driver hanya memuat `pickup_id`, `status`, `updated_at`, sisanya berisi default.
- * Sisi Kilang (create) ada di dashboard web.
+ * Pembuatan pickup (sisi Kilang) belum ada di API maupun dashboard web saat ini.
  */
 @Serializable
 data class PickupStatusDto(
@@ -256,12 +263,12 @@ data class PickupStatusDto(
     @SerialName("agen_id") @Serializable(with = FlexibleStringSerializer::class)
     val agenId: String = "",
     val date: String = "",
-    /** ASSIGNED, OTW, COMPLETED, CANCELLED. */
+    /** ASSIGNED, OTW, ARRIVED, COMPLETED, CANCELLED. */
     val status: String = "",
     @SerialName("updated_at") val updatedAt: String = "",
 )
 
-/** Body PATCH /api/driver/pickup/status. `status`: ASSIGNED, OTW, COMPLETED, CANCELLED. */
+/** Body PATCH /api/driver/pickup/status. `status`: ASSIGNED, OTW, ARRIVED, COMPLETED, CANCELLED. */
 @Serializable
 data class UpdatePickupStatusRequest(
     @SerialName("pickup_id") val pickupId: String,

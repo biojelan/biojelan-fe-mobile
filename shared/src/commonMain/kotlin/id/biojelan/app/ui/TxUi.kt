@@ -40,7 +40,7 @@ fun TxStatus.driverLabel(asAgen: Boolean): String = when (this) {
 fun TransactionDto.counterpartName(viewer: Viewer, agenNameLookup: (String) -> String? = { null }): String =
     when (viewer) {
         Viewer.Klien -> agenName.ifBlank { agenNameLookup(agenId).orEmpty() }.ifBlank { "Agen" }
-        Viewer.Agen -> klienName.ifBlank { "Klien" }
+        Viewer.Agen -> klienName.ifBlank { if (klienId.isBlank()) "Tamu" else "Klien" }
     }
 
 /** Transaksi yang masih dihitung ke volume: ditolak & dibatalkan tidak ikut. */

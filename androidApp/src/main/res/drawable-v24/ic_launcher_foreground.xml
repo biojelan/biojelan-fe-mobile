@@ -7,10 +7,10 @@
 
     <!-- Outer drop (stroke only) — matches SVG outer ring -->
     <group
-        android:scaleX="0.42"
-        android:scaleY="0.42"
-        android:translateX="31.5"
-        android:translateY="28.2">
+        android:scaleX="0.527"
+        android:scaleY="0.527"
+        android:translateX="27.65"
+        android:translateY="22.14">
         <path
             android:strokeWidth="4.6"
             android:strokeLineJoin="round"
@@ -29,10 +29,10 @@
 
     <!-- Inner filled drop — matches SVG nested drop -->
     <group
-        android:scaleX="0.31"
-        android:scaleY="0.31"
-        android:translateX="38.5"
-        android:translateY="34.8">
+        android:scaleX="0.3913"
+        android:scaleY="0.3913"
+        android:translateX="34.43"
+        android:translateY="32.45">
         <path
             android:pathData="M50,6 C31,33 12,57 12,80 A38,38 0,0 0,88,80 C88,57 69,33 50,6 Z">
             <aapt:attr name="android:fillColor">

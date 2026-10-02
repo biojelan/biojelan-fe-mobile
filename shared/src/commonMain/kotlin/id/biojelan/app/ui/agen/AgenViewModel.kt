@@ -216,22 +216,29 @@ class AgenViewModel(
      * POST /api/agent/transaction. [contact] berisi email ATAU nomor telepon Klien terdaftar; harga dihitung
      * server. Klien lalu menerima atau menolak lewat app-nya.
      */
-    fun createTransaction(contact: String, volumeLiter: Double, onSuccess: () -> Unit) {
+    fun createTransaction(contact: String, volumeLiter: Double, guestName: String? = null, onSuccess: () -> Unit) {
         if (_state.value.creating) return
         cancelAutoRefresh()
         val value = contact.trim()
-        val isEmail = '@' in value
+        val isGuest = guestName != null
+        val isEmail = !isGuest && '@' in value
         viewModelScope.launch {
             _state.update { it.copy(creating = true) }
             val result = transactions.createAsAgen(
-                clientEmail = if (isEmail) value else null,
-                clientPhone = if (isEmail) null else value,
+                // Tamu: backend hanya mengenali email khusus tamu; nama & telepon masuk catatan.
+                clientEmail = if (isGuest) AppConfig.GUEST_CLIENT_EMAIL else if (isEmail) value else null,
+                clientPhone = if (isGuest || isEmail) null else value,
                 volumeLiter = volumeLiter,
+                note = if (isGuest) "Tamu: ${guestName?.trim()} ($value)" else null,
             )
             when (result) {
                 is ApiResult.Success -> {
-                    val who = result.data.klienName.ifBlank { value }
-                    toast("Transaksi dikirim ke $who — menunggu konfirmasi Klien")
+                    if (isGuest) {
+                        toast("Transaksi tamu ${guestName?.trim()} dicatat")
+                    } else {
+                        val who = result.data.klienName.ifBlank { value }
+                        toast("Transaksi dikirim ke $who — menunggu konfirmasi Klien")
+                    }
                     onSuccess()
                     refresh()
                 }
