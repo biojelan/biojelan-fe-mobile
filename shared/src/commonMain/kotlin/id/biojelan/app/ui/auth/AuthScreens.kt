@@ -1,5 +1,13 @@
 package id.biojelan.app.ui.auth
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -23,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -103,97 +113,144 @@ fun LoginScreen(onForgot: () -> Unit, vm: AuthViewModel = koinViewModel()) {
         if (isRegister) vm.register(name, email, password, confirmation) else vm.login(email, password)
     }
 
-    Box(Modifier.fillMaxSize().background(c.paper).systemBarsPadding().imePadding()) {
-        Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad, vertical = 24.dp),
-        ) {
-            Spacer(Modifier.height(12.dp))
-            BrandMark()
-            Spacer(Modifier.height(18.dp))
-            Text(
-                if (isRegister) s.createAccountTitle else s.welcomeTitle,
-                style = BioTheme.type.title,
-                color = c.ink,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                if (isRegister) s.createAccountSubtitle else s.welcomeSubtitle,
-                style = BioTheme.type.body,
-                color = c.muted,
-            )
-            Spacer(Modifier.height(22.dp))
+    val bleed = CurrentAuthHeroStyle == AuthHeroStyle.Bleed
 
-            SegmentedTabs(
-                options = listOf(s.signIn, s.signUp),
-                selected = mode,
-                onSelect = {
-                    mode = it
-                    vm.clearErrors()
+    // Gaya Bleed: hero menembus status bar, jadi hanya bar navigasi yang diberi padding di sini.
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(c.paper)
+            .then(if (bleed) Modifier.navigationBarsPadding() else Modifier.systemBarsPadding())
+            .imePadding(),
+    ) {
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            AuthHero(
+                compact = isRegister,
+                modifier = if (bleed) {
+                    Modifier.entrance(0, distance = 8.dp)
+                } else {
+                    Modifier.padding(horizontal = ScreenPad).padding(top = 8.dp).entrance(0, distance = 12.dp, scaleFrom = 0.97f)
                 },
             )
-            Spacer(Modifier.height(20.dp))
+            Column(Modifier.padding(start = ScreenPad, end = ScreenPad, top = if (bleed) 12.dp else 20.dp, bottom = 24.dp)) {
+                Crossfade(
+                    targetState = isRegister,
+                    animationSpec = tween(260),
+                    modifier = Modifier.fillMaxWidth().animateContentSize().entrance(1),
+                    label = "auth-heading",
+                ) { register ->
+                    Column {
+                        Text(
+                            if (register) s.createAccountTitle else s.welcomeTitle,
+                            style = BioTheme.type.title,
+                            color = c.ink,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            if (register) s.createAccountSubtitle else s.welcomeSubtitle,
+                            style = BioTheme.type.body,
+                            color = c.muted,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(22.dp))
 
-            if (isRegister) {
-                BioField(s.fieldFullName, name, { name = it }, placeholder = s.placeholderName, error = state.fieldErrors["name"])
-            }
-            BioField(
-                s.fieldEmail, email, { email = it },
-                placeholder = s.placeholderEmail,
-                keyboardType = KeyboardType.Email,
-                error = state.fieldErrors["email"],
-            )
-            BioField(
-                s.fieldPassword, password, { password = it },
-                placeholder = if (isRegister) s.placeholderPasswordMin else s.placeholderPasswordYours,
-                isPassword = true,
-                keyboardType = KeyboardType.Password,
-                imeAction = if (isRegister) ImeAction.Next else ImeAction.Done,
-                onDone = { submit() },
-                error = state.fieldErrors["password"],
-            )
-            if (isRegister) {
+                SegmentedTabs(
+                    options = listOf(s.signIn, s.signUp),
+                    selected = mode,
+                    onSelect = {
+                        mode = it
+                        vm.clearErrors()
+                    },
+                    modifier = Modifier.entrance(2),
+                )
+                Spacer(Modifier.height(20.dp))
+
+                AnimatedVisibility(
+                    visible = isRegister,
+                    enter = expandVertically(tween(300)) + fadeIn(tween(300)),
+                    exit = shrinkVertically(tween(220)) + fadeOut(tween(160)),
+                ) {
+                    BioField(
+                        s.fieldFullName, name, { name = it },
+                        placeholder = s.placeholderName,
+                        error = state.fieldErrors["name"],
+                    )
+                }
                 BioField(
-                    s.fieldRepeatPassword, confirmation, { confirmation = it },
-                    placeholder = s.placeholderRepeatPassword,
+                    s.fieldEmail, email, { email = it },
+                    placeholder = s.placeholderEmail,
+                    keyboardType = KeyboardType.Email,
+                    error = state.fieldErrors["email"],
+                    modifier = Modifier.entrance(3),
+                )
+                BioField(
+                    s.fieldPassword, password, { password = it },
+                    placeholder = if (isRegister) s.placeholderPasswordMin else s.placeholderPasswordYours,
                     isPassword = true,
                     keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
+                    imeAction = if (isRegister) ImeAction.Next else ImeAction.Done,
                     onDone = { submit() },
-                    error = state.fieldErrors["confirmation"],
+                    error = state.fieldErrors["password"],
+                    modifier = Modifier.entrance(4),
                 )
-            }
+                AnimatedVisibility(
+                    visible = isRegister,
+                    enter = expandVertically(tween(300)) + fadeIn(tween(300)),
+                    exit = shrinkVertically(tween(220)) + fadeOut(tween(160)),
+                ) {
+                    BioField(
+                        s.fieldRepeatPassword, confirmation, { confirmation = it },
+                        placeholder = s.placeholderRepeatPassword,
+                        isPassword = true,
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                        onDone = { submit() },
+                        error = state.fieldErrors["confirmation"],
+                    )
+                }
 
-            state.error?.let {
-                NoteBox(it, tone = NoteTone.Rust, icon = BioIcons.Alert, modifier = Modifier.padding(bottom = 14.dp))
-            }
+                state.error?.let { message ->
+                    // key(message): animasi muncul diputar ulang tiap pesan error berganti
+                    key(message) {
+                        NoteBox(
+                            message,
+                            tone = NoteTone.Rust,
+                            icon = BioIcons.Alert,
+                            modifier = Modifier.padding(bottom = 14.dp).entrance(0, distance = 8.dp),
+                        )
+                    }
+                }
 
-            BioButton(
-                text = if (isRegister) s.signUp else s.signIn,
-                onClick = { submit() },
-                loading = state.loading,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            if (!isRegister) {
-                Text(
-                    s.forgotPasswordLink,
-                    style = BioTheme.type.label,
-                    color = c.primary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable {
-                            vm.clearErrors()
-                            onForgot()
-                        }
-                        .padding(12.dp),
+                BioButton(
+                    text = if (isRegister) s.signUp else s.signIn,
+                    onClick = { submit() },
+                    loading = state.loading,
+                    modifier = Modifier.fillMaxWidth().entrance(5),
                 )
-            }
 
-            Spacer(Modifier.height(if (isRegister) 22.dp else 8.dp))
-            GuestEntryButton(onClick = vm::enterGuestMode)
+                if (!isRegister) {
+                    Text(
+                        s.forgotPasswordLink,
+                        style = BioTheme.type.label,
+                        color = c.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .entrance(6)
+                            .padding(top = 8.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable {
+                                vm.clearErrors()
+                                onForgot()
+                            }
+                            .padding(12.dp),
+                    )
+                }
+
+                Spacer(Modifier.height(if (isRegister) 22.dp else 8.dp))
+                GuestEntryButton(onClick = vm::enterGuestMode, modifier = Modifier.entrance(7))
+            }
         }
     }
 }
