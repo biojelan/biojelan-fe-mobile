@@ -113,6 +113,7 @@ interface BioStrings {
     val transactionsTitle: String
     val transactionDetailTitle: String
     val todayLabel: String
+    val yesterdayLabel: String
     val volumeToday: String
     val noTransactionsTitle: String
     val noTransactionsHint: String

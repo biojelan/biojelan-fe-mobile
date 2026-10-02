@@ -36,13 +36,16 @@ import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.DetailRow
 import id.biojelan.app.ui.components.EmptyBlock
+import id.biojelan.app.ui.components.HeroDonut
+import id.biojelan.app.ui.components.LedgerHero
+import id.biojelan.app.ui.components.MonthHeader
+import id.biojelan.app.ui.components.groupByMonth
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.LoadingBlock
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.NoteTone
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.ScreenTopBar
-import id.biojelan.app.ui.components.StatCard
 import id.biojelan.app.ui.components.TxRow
 import id.biojelan.app.ui.counterpartName
 import id.biojelan.app.ui.icons.BioIcons
@@ -56,9 +59,11 @@ fun KlienHistoryTab(state: KlienUiState, vm: KlienViewModel) {
     var selectedId by remember { mutableStateOf<String?>(null) }
     val agenName: (String) -> String? = { id -> state.agens.firstOrNull { it.agenId == id }?.name }
 
-    val accepted = state.transactions.filter { it.txStatus == TxStatus.Accepted }
+    val accepted = remember(state.transactions) { state.transactions.filter { it.txStatus == TxStatus.Accepted } }
     val totalLiters = accepted.sumOf { it.volumeLiter }
     val totalValue = accepted.sumOf { it.totalPrice }
+    val doneRatio = if (state.transactions.isEmpty()) 0f else accepted.size.toFloat() / state.transactions.size
+    val groups = remember(state.transactions) { groupByMonth(state.transactions) { it.createdAt } }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -71,11 +76,15 @@ fun KlienHistoryTab(state: KlienUiState, vm: KlienViewModel) {
             })
         }
         item {
-            Row(Modifier.padding(horizontal = ScreenPad), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatCard(state.transactions.size.toString(), s.transactionsCount, Modifier.weight(1f))
-                StatCard(formatNumber(totalLiters, 1) + " L", s.oilSold, Modifier.weight(1f))
-                StatCard(formatRupiahCompact(totalValue), s.totalReceived, Modifier.weight(1f))
-            }
+            LedgerHero(
+                eyebrow = s.totalReceived.uppercase(),
+                value = formatRupiah(totalValue),
+                stats = listOf(
+                    s.oilSold to formatNumber(totalLiters, 1) + " L",
+                    s.transactionsCount to state.transactions.size.toString(),
+                ),
+                modifier = Modifier.padding(horizontal = ScreenPad),
+            ) { HeroDonut(doneRatio, TxStatus.Accepted.label(Viewer.Klien)) }
         }
         when {
             state.txLoading && state.transactions.isEmpty() -> item { LoadingBlock() }
@@ -83,18 +92,24 @@ fun KlienHistoryTab(state: KlienUiState, vm: KlienViewModel) {
             state.transactions.isEmpty() -> item {
                 EmptyBlock(BioIcons.Receipt, s.noHistoryTitle, s.noHistoryHint)
             }
-            else -> items(state.transactions) { tx ->
-                val name = tx.counterpartName(Viewer.Klien, agenName)
-                TxRow(
-                    avatar = agenInitials(name),
-                    title = name,
-                    subtitle = formatRelativeDateTime(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
-                    amount = formatRupiah(tx.totalPrice),
-                    statusText = tx.txStatus.label(Viewer.Klien),
-                    statusKind = tx.txStatus.chipKind(),
-                    modifier = Modifier.padding(horizontal = ScreenPad),
-                    onClick = { selectedId = tx.transactionId },
-                )
+            else -> groups.forEach { group ->
+                val monthTotal = group.items.filter { it.txStatus == TxStatus.Accepted }.sumOf { it.totalPrice }
+                item(key = "month-${group.key}") {
+                    MonthHeader(group.key, trailing = if (monthTotal > 0) formatRupiahCompact(monthTotal) else null)
+                }
+                items(group.items) { tx ->
+                    val name = tx.counterpartName(Viewer.Klien, agenName)
+                    TxRow(
+                        avatar = agenInitials(name),
+                        title = name,
+                        subtitle = formatRelativeDateTime(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
+                        amount = formatRupiah(tx.totalPrice),
+                        statusText = tx.txStatus.label(Viewer.Klien),
+                        statusKind = tx.txStatus.chipKind(),
+                        modifier = Modifier.padding(horizontal = ScreenPad),
+                        onClick = { selectedId = tx.transactionId },
+                    )
+                }
             }
         }
     }

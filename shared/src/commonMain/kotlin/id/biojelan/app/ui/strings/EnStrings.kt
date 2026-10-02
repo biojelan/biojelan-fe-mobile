@@ -107,6 +107,7 @@ object EnStrings : BioStrings {
     override val transactionsTitle = "Transactions"
     override val transactionDetailTitle = "Transaction detail"
     override val todayLabel = "Today"
+    override val yesterdayLabel = "Yesterday"
     override val volumeToday = "Volume today"
     override val noTransactionsTitle = "No transactions"
     override val noTransactionsHint = "Press the + button to record a sale from a Client."

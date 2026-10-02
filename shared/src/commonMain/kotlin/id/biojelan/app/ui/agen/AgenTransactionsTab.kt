@@ -38,9 +38,8 @@ import androidx.compose.ui.unit.dp
 import id.biojelan.app.core.formatDateTime
 import id.biojelan.app.core.formatLiter
 import id.biojelan.app.core.formatNumber
-import id.biojelan.app.core.formatRelativeDateTime
+import id.biojelan.app.core.formatTimeOnly
 import id.biojelan.app.core.formatRupiah
-import id.biojelan.app.core.formatRupiahCompact
 import id.biojelan.app.core.initialsOf
 import id.biojelan.app.data.remote.DriverTransactionDto
 import id.biojelan.app.data.remote.TransactionDto
@@ -54,7 +53,13 @@ import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.BioField
 import id.biojelan.app.ui.components.BioSheet
 import id.biojelan.app.ui.components.CircleIconButton
+import id.biojelan.app.ui.components.DayHeader
 import id.biojelan.app.ui.components.DetailRow
+import id.biojelan.app.ui.components.LedgerHero
+import id.biojelan.app.ui.components.WeekBars
+import id.biojelan.app.ui.components.groupByDay
+import id.biojelan.app.ui.components.weekVolumeBars
+import id.biojelan.app.ui.countsForVolume
 import id.biojelan.app.ui.components.EmptyBlock
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.LoadingBlock
@@ -62,7 +67,6 @@ import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.NoteTone
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.ScreenTopBar
-import id.biojelan.app.ui.components.StatCard
 import id.biojelan.app.ui.components.TxRow
 import id.biojelan.app.ui.counterpartName
 import id.biojelan.app.ui.driverLabel
@@ -78,6 +82,15 @@ fun AgenTransactionsTab(state: AgenUiState, vm: AgenViewModel, onNewTransaction:
     var segment by rememberSaveable { mutableStateOf(0) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var selectedDriverId by remember { mutableStateOf<String?>(null) }
+
+    val clientGroups = remember(state.transactions) { groupByDay(state.transactions) { it.createdAt } }
+    val driverGroups = remember(state.driverTransactions) { groupByDay(state.driverTransactions) { it.createdAt } }
+    val clientBars = remember(state.transactions) {
+        weekVolumeBars(state.transactions.filter { it.txStatus.countsForVolume() }.map { it.createdAt to it.volumeLiter })
+    }
+    val driverBars = remember(state.driverTransactions) {
+        weekVolumeBars(state.driverTransactions.filter { it.txStatus.countsForVolume() }.map { it.createdAt to it.volumeLiter })
+    }
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -100,11 +113,15 @@ fun AgenTransactionsTab(state: AgenUiState, vm: AgenViewModel, onNewTransaction:
             }
             if (segment == 0) {
                 item {
-                    Row(Modifier.padding(horizontal = ScreenPad), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        StatCard(state.todayCount.toString(), s.todayLabel, Modifier.weight(1f))
-                        StatCard(formatNumber(state.todayLiters, 1) + " L", s.volumeToday, Modifier.weight(1f))
-                        StatCard(formatRupiahCompact(state.todayValue), s.valueToday, Modifier.weight(1f))
-                    }
+                    LedgerHero(
+                        eyebrow = s.volumeToday.uppercase(),
+                        value = formatNumber(state.todayLiters, 1) + " L",
+                        stats = listOf(
+                            s.valueToday to formatRupiah(state.todayValue),
+                            s.todayTransactions to state.todayCount.toString(),
+                        ),
+                        modifier = Modifier.padding(horizontal = ScreenPad),
+                    ) { WeekBars(clientBars) }
                 }
                 when {
                     state.loading && state.transactions.isEmpty() -> item { LoadingBlock() }
@@ -112,27 +129,34 @@ fun AgenTransactionsTab(state: AgenUiState, vm: AgenViewModel, onNewTransaction:
                     state.transactions.isEmpty() -> item {
                         EmptyBlock(BioIcons.Receipt, s.noTransactionsTitle, s.noTransactionsHint)
                     }
-                    else -> items(state.transactions) { tx ->
-                        val name = tx.counterpartName(Viewer.Agen)
-                        TxRow(
-                            avatar = initialsOf(name),
-                            title = name,
-                            subtitle = formatRelativeDateTime(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
-                            amount = formatRupiah(tx.totalPrice),
-                            statusText = tx.txStatus.label(Viewer.Agen),
-                            statusKind = tx.txStatus.chipKind(),
-                            modifier = Modifier.padding(horizontal = ScreenPad),
-                            onClick = { selectedId = tx.transactionId },
-                        )
+                    else -> clientGroups.forEach { group ->
+                        item(key = "c-day-${group.epochDay}") { DayHeader(group.epochDay) }
+                        items(group.items) { tx ->
+                            val name = tx.counterpartName(Viewer.Agen)
+                            TxRow(
+                                avatar = initialsOf(name),
+                                title = name,
+                                subtitle = formatTimeOnly(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
+                                amount = formatRupiah(tx.totalPrice),
+                                statusText = tx.txStatus.label(Viewer.Agen),
+                                statusKind = tx.txStatus.chipKind(),
+                                modifier = Modifier.padding(horizontal = ScreenPad),
+                                onClick = { selectedId = tx.transactionId },
+                            )
+                        }
                     }
                 }
             } else {
                 item {
-                    Row(Modifier.padding(horizontal = ScreenPad), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        StatCard(state.todayDriverCount.toString(), s.todayLabel, Modifier.weight(1f))
-                        StatCard(formatNumber(state.todayDriverLiters, 1) + " L", s.volumeToday, Modifier.weight(1f))
-                        StatCard(formatRupiahCompact(state.todayDriverValue), s.valueToday, Modifier.weight(1f))
-                    }
+                    LedgerHero(
+                        eyebrow = s.volumeToday.uppercase(),
+                        value = formatNumber(state.todayDriverLiters, 1) + " L",
+                        stats = listOf(
+                            s.valueToday to formatRupiah(state.todayDriverValue),
+                            s.todayTransactions to state.todayDriverCount.toString(),
+                        ),
+                        modifier = Modifier.padding(horizontal = ScreenPad),
+                    ) { WeekBars(driverBars) }
                 }
                 when {
                     state.driverTxError != null && state.driverTransactions.isEmpty() ->
@@ -140,18 +164,21 @@ fun AgenTransactionsTab(state: AgenUiState, vm: AgenViewModel, onNewTransaction:
                     state.driverTransactions.isEmpty() -> item {
                         EmptyBlock(BioIcons.Truck, s.noTransactionsTitle, s.agenDriverNoTransactionsHint)
                     }
-                    else -> items(state.driverTransactions) { tx ->
-                        // DriverTransactionDto tidak punya nama Driver (hanya driver_id), jadi tampilkan label peran.
-                        TxRow(
-                            avatar = initialsOf(s.roleDriver),
-                            title = s.roleDriver,
-                            subtitle = formatRelativeDateTime(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
-                            amount = formatRupiah(tx.totalPrice),
-                            statusText = tx.txStatus.driverLabel(asAgen = true),
-                            statusKind = tx.txStatus.chipKind(),
-                            modifier = Modifier.padding(horizontal = ScreenPad),
-                            onClick = { selectedDriverId = tx.transactionId },
-                        )
+                    else -> driverGroups.forEach { group ->
+                        item(key = "d-day-${group.epochDay}") { DayHeader(group.epochDay) }
+                        items(group.items) { tx ->
+                            // DriverTransactionDto tidak punya nama Driver (hanya driver_id), jadi tampilkan label peran.
+                            TxRow(
+                                avatar = initialsOf(s.roleDriver),
+                                title = s.roleDriver,
+                                subtitle = formatTimeOnly(tx.createdAt) + " · " + formatLiter(tx.volumeLiter),
+                                amount = formatRupiah(tx.totalPrice),
+                                statusText = tx.txStatus.driverLabel(asAgen = true),
+                                statusKind = tx.txStatus.chipKind(),
+                                modifier = Modifier.padding(horizontal = ScreenPad),
+                                onClick = { selectedDriverId = tx.transactionId },
+                            )
+                        }
                     }
                 }
             }

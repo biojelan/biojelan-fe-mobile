@@ -13,6 +13,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -216,9 +218,33 @@ fun PriceBand(price: Long, caption: String, modifier: Modifier = Modifier) {
 private const val PIN_PATH = "M12 2C8 2 5 5 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-4-3-7-7-7z"
 
 /**
+ * Posisi ujung bawah pin (titik koordinat) untuk tiap [points] pada kanvas berukuran [w] x [h] px.
+ * Elemen null = titik tanpa koordinat (0,0). Dipakai bersama oleh gambar dan hit-test supaya tak pernah beda.
+ */
+private fun pinTips(points: List<Pair<Double, Double>>, w: Float, h: Float): List<Offset?> {
+    val valid = points.filter { it.first != 0.0 || it.second != 0.0 }
+    if (valid.isEmpty()) return points.map { null }
+    val minLat = valid.minOf { it.first }
+    val maxLat = valid.maxOf { it.first }
+    val minLng = valid.minOf { it.second }
+    val maxLng = valid.maxOf { it.second }
+    val padX = w * 0.14f
+    val padY = h * 0.2f
+    return points.map { (lat, lng) ->
+        if (lat == 0.0 && lng == 0.0) return@map null
+        val fx = if (maxLng - minLng < 1e-9) 0.5f else ((lng - minLng) / (maxLng - minLng)).toFloat()
+        val fy = if (maxLat - minLat < 1e-9) 0.5f else ((maxLat - lat) / (maxLat - minLat)).toFloat()
+        Offset(padX + fx * (w - 2 * padX), padY + fy * (h - 2 * padY))
+    }
+}
+
+/**
  * Pratinjau peta bergaya prototype: grid + pin. Posisi pin diproyeksikan dari koordinat asli
  * (latitude/longitude) relatif terhadap kotak pembatas seluruh titik. Bukan peta interaktif —
  * tombol "Buka di peta" membuka aplikasi peta bawaan.
+ *
+ * [highlight] >= 0 menebalkan satu pin dan meredupkan sisanya. Bila [onPinClick] diisi, ketukan di
+ * dekat sebuah pin memanggilnya dengan indeks pin tersebut. [cornerRadius] 0 = tanpa sudut (full-bleed).
  */
 @Composable
 fun MapPreview(
@@ -226,14 +252,37 @@ fun MapPreview(
     modifier: Modifier = Modifier,
     height: Dp = 150.dp,
     highlight: Int = -1,
+    cornerRadius: Dp = 20.dp,
+    onPinClick: ((Int) -> Unit)? = null,
 ) {
     val c = BioTheme.colors
     val pin = remember { PathParser().parsePathString(PIN_PATH).toPath() }
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(cornerRadius)
     Box(
         modifier = modifier.fillMaxWidth().height(height).clip(shape).background(c.mapBase, shape).border(1.dp, c.line, shape),
     ) {
-        Canvas(Modifier.fillMaxSize()) {
+        Canvas(
+            Modifier
+                .fillMaxSize()
+                .then(
+                    if (onPinClick == null) Modifier else Modifier.pointerInput(points) {
+                        detectTapGestures { tap ->
+                            val pinPx = 26.dp.toPx()
+                            val reach = 28.dp.toPx()
+                            val tips = pinTips(points, size.width.toFloat(), size.height.toFloat())
+                            var best = -1
+                            var bestDist = Float.MAX_VALUE
+                            tips.forEachIndexed { index, tip ->
+                                if (tip == null) return@forEachIndexed
+                                // pusat tubuh pin berada setengah tinggi pin di atas ujungnya
+                                val dist = (tap - Offset(tip.x, tip.y - pinPx / 2f)).getDistance()
+                                if (dist < bestDist) { bestDist = dist; best = index }
+                            }
+                            if (best >= 0 && bestDist <= reach) onPinClick(best)
+                        }
+                    },
+                ),
+        ) {
             val step = 26.dp.toPx()
             var x = step
             while (x < size.width) {
@@ -248,27 +297,18 @@ fun MapPreview(
             // "sungai" dekoratif
             drawLine(Color(0xFFCFE0EA), Offset(0f, size.height * 0.72f), Offset(size.width, size.height * 0.38f), strokeWidth = 9.dp.toPx())
 
-            val valid = points.filter { it.first != 0.0 || it.second != 0.0 }
-            if (valid.isEmpty()) return@Canvas
-            val minLat = valid.minOf { it.first }
-            val maxLat = valid.maxOf { it.first }
-            val minLng = valid.minOf { it.second }
-            val maxLng = valid.maxOf { it.second }
-            val padX = size.width * 0.14f
-            val padY = size.height * 0.2f
-            val pinPx = 26.dp.toPx()
-            val s = pinPx / 24f
-
-            points.forEachIndexed { index, (lat, lng) ->
-                if (lat == 0.0 && lng == 0.0) return@forEachIndexed
-                val fx = if (maxLng - minLng < 1e-9) 0.5f else ((lng - minLng) / (maxLng - minLng)).toFloat()
-                val fy = if (maxLat - minLat < 1e-9) 0.5f else ((maxLat - lat) / (maxLat - minLat)).toFloat()
-                val px = padX + fx * (size.width - 2 * padX)
-                val py = padY + fy * (size.height - 2 * padY)
+            val tips = pinTips(points, size.width, size.height)
+            val basePx = 26.dp.toPx()
+            // pin yang disorot digambar terakhir supaya tidak tertutup pin lain
+            val order = tips.indices.sortedBy { if (it == highlight) 1 else 0 }
+            order.forEach { index ->
+                val tip = tips[index] ?: return@forEach
                 val active = highlight < 0 || highlight == index
-                translate(left = px - pinPx / 2f, top = py - pinPx) {
+                val pinPx = if (index == highlight) basePx * 1.3f else basePx
+                val s = pinPx / 24f
+                translate(left = tip.x - pinPx / 2f, top = tip.y - pinPx) {
                     scale(s, s, pivot = Offset.Zero) {
-                        drawPath(pin, color = if (active) c.primary else c.primary.copy(alpha = 0.45f))
+                        drawPath(pin, color = if (index == highlight) c.amberDeep else if (active) c.primary else c.primary.copy(alpha = 0.45f))
                         drawCircle(Color.White, radius = 3f, center = Offset(12f, 9f))
                     }
                 }

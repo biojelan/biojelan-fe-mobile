@@ -6,6 +6,10 @@ import kotlin.math.roundToLong
 private const val MS_PER_DAY = 86_400_000L
 private val DAYS_ID = listOf("Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu")
 private val MONTHS_ID = listOf("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
+private val MONTHS_FULL_ID = listOf(
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+)
 
 // ---------------------------------------------------------------- angka
 
@@ -241,3 +245,24 @@ fun formatTodayLabel(nowMillis: Long = nowEpochMillis(), offsetSeconds: Int = lo
     val weekday = DAYS_ID[(p.epochDay + 3).mod(7L).toInt()]
     return "$weekday, ${p.day} ${MONTHS_ID[p.month - 1]}"
 }
+
+/** Hari sejak epoch (lokal) dari ISO-8601; null kalau gagal parse. Dipakai untuk mengelompokkan per hari. */
+fun localEpochDayOf(iso: String?, offsetSeconds: Int = localUtcOffsetSeconds()): Long? =
+    parseIsoMillis(iso)?.let { localParts(it, offsetSeconds).epochDay }
+
+/** Hari ini (lokal) sebagai epoch day. */
+fun todayEpochDay(nowMillis: Long = nowEpochMillis(), offsetSeconds: Int = localUtcOffsetSeconds()): Long =
+    localParts(nowMillis, offsetSeconds).epochDay
+
+/** 20000 (epoch day) -> "7 Agu 2026". */
+fun formatEpochDay(epochDay: Long): String {
+    val (y, m, d) = civilFromDays(epochDay)
+    return "$d ${MONTHS_ID[m - 1]} $y"
+}
+
+/** Kunci bulan (tahun * 12 + bulan - 1) dari ISO-8601; null kalau gagal parse. */
+fun monthKeyOf(iso: String?, offsetSeconds: Int = localUtcOffsetSeconds()): Int? =
+    parseIsoMillis(iso)?.let { localParts(it, offsetSeconds) }?.let { it.year * 12 + (it.month - 1) }
+
+/** Kunci bulan -> "Oktober 2026". */
+fun formatMonthKey(key: Int): String = "${MONTHS_FULL_ID[key.mod(12)]} ${key.floorDiv(12)}"

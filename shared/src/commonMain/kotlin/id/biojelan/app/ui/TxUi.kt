@@ -42,3 +42,6 @@ fun TransactionDto.counterpartName(viewer: Viewer, agenNameLookup: (String) -> S
         Viewer.Klien -> agenName.ifBlank { agenNameLookup(agenId).orEmpty() }.ifBlank { "Agen" }
         Viewer.Agen -> klienName.ifBlank { "Klien" }
     }
+
+/** Transaksi yang masih dihitung ke volume: ditolak & dibatalkan tidak ikut. */
+fun TxStatus.countsForVolume(): Boolean = this != TxStatus.Rejected && this != TxStatus.Cancelled

@@ -108,6 +108,7 @@ object IdStrings : BioStrings {
     override val transactionsTitle = "Transaksi"
     override val transactionDetailTitle = "Detail transaksi"
     override val todayLabel = "Hari ini"
+    override val yesterdayLabel = "Kemarin"
     override val volumeToday = "Volume hari ini"
     override val noTransactionsTitle = "Belum ada transaksi"
     override val noTransactionsHint = "Tekan tombol + untuk mencatat penjualan dari Klien."
