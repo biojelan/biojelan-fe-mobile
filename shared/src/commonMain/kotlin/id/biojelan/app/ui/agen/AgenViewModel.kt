@@ -18,7 +18,6 @@ import id.biojelan.app.data.repository.SessionState
 import id.biojelan.app.data.repository.TransactionRepository
 import id.biojelan.app.data.repository.TxStatus
 import id.biojelan.app.data.repository.UserRepository
-import id.biojelan.app.data.repository.toUpdateRequest
 import id.biojelan.app.data.repository.txStatus
 import id.biojelan.app.ui.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +39,6 @@ data class AgenUiState(
     val creating: Boolean = false,
     /** transaction_id yang sedang diajukan pembatalannya. */
     val busyTxId: String? = null,
-    val togglingOpen: Boolean = false,
     val pickup: PickupStatusDto? = null,
     val pickupLoading: Boolean = true,
     /** Pesan error pemuatan status pickup terakhir; null = terakhir berhasil. Data [pickup] lama tetap dipertahankan. */
@@ -107,7 +105,7 @@ class AgenViewModel(
     }
 
     override fun canAutoRefresh(): Boolean = _state.value.let {
-        !it.loading && !it.creating && !it.togglingOpen && it.busyTxId == null && it.busyDriverTxId == null
+        !it.loading && !it.creating && it.busyTxId == null && it.busyDriverTxId == null
     }
 
     /**
@@ -132,9 +130,9 @@ class AgenViewModel(
         }
     }
 
-    fun refresh() {
+    fun refresh(): Job {
         cancelAutoRefresh()
-        viewModelScope.launch {
+        return viewModelScope.launch {
             val hadData = _state.value.transactions.isNotEmpty()
             _state.update { it.copy(loading = true, error = null) }
             // Stok (`stock_liter`) ikut di GET /api/user, jadi ambil ulang profil bersamaan dengan transaksi.
@@ -156,6 +154,18 @@ class AgenViewModel(
                     if (hadData) toast(result.message)
                 }
             }
+        }
+    }
+
+    /**
+     * Dipanggil tombol muat ulang: sama seperti [refresh], lalu memberi tahu pengguna kalau semuanya
+     * berhasil dimuat. Kalau ada yang gagal, pesan error yang sudah ada yang tampil (bukan notifikasi ini).
+     */
+    fun manualRefresh() {
+        viewModelScope.launch {
+            refresh().join()
+            val st = _state.value
+            if (st.error == null && st.pickupError == null && st.driverTxError == null) toastUpToDate()
         }
     }
 
@@ -315,23 +325,6 @@ class AgenViewModel(
                 is ApiResult.Failure -> toast(result.message)
             }
             _state.update { it.copy(busyDriverTxId = null) }
-        }
-    }
-
-    /** Buka/tutup toko lewat PATCH /api/user (agen.is_open). */
-    fun toggleOpen() {
-        val current = session.currentUser ?: return
-        val agen = current.agen ?: return
-        if (_state.value.togglingOpen) return
-        cancelAutoRefresh()
-        viewModelScope.launch {
-            _state.update { it.copy(togglingOpen = true) }
-            val nextOpen = !agen.isOpen
-            when (val result = users.updateUser(current.toUpdateRequest(isOpen = nextOpen))) {
-                is ApiResult.Success -> toast(if (nextOpen) "Toko dibuka — Klien bisa melihat Anda." else "Toko ditutup sementara.")
-                is ApiResult.Failure -> toast(result.message)
-            }
-            _state.update { it.copy(togglingOpen = false) }
         }
     }
 

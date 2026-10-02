@@ -66,7 +66,7 @@ fun AgenStockTab(state: AgenUiState, user: UserDto, vm: AgenViewModel) {
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
         ScreenTopBar(s.stockTitle, actions = {
-            CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload, loading = state.loading)
+            CircleIconButton(BioIcons.Refresh, onClick = vm::manualRefresh, contentDescription = s.reload, loading = state.loading)
         })
         Column(Modifier.padding(horizontal = ScreenPad), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(4.dp))

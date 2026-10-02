@@ -22,6 +22,9 @@ abstract class BaseViewModel : ViewModel() {
         if (toastDedupe.shouldEmit(text)) _messages.tryEmit(text)
     }
 
+    /** Umpan balik refresh manual (tombol muat ulang) yang berhasil tanpa error. */
+    protected fun toastUpToDate() = toast(MSG_UP_TO_DATE)
+
     private val autoRefresher = AutoRefreshGate(
         scope = viewModelScope,
         minGapMs = AppConfig.AUTO_REFRESH_MIN_GAP_MS,
@@ -51,4 +54,8 @@ abstract class BaseViewModel : ViewModel() {
      * (mis. transaksi yang baru diterima muncul lagi sebagai "menunggu").
      */
     protected fun cancelAutoRefresh() = autoRefresher.cancel()
+
+    private companion object {
+        const val MSG_UP_TO_DATE = "Data sudah sudah diperbarui."
+    }
 }

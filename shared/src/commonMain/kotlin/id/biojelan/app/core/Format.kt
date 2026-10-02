@@ -55,6 +55,18 @@ fun initialsOf(name: String, max: Int = 2): String {
 /** "Agen Barokah Jaya" -> "BJ" (awalan "Agen" tidak dihitung). */
 fun agenInitials(name: String): String = initialsOf(name.trim().removePrefix("Agen ").removePrefix("agen "))
 
+/**
+ * Nama sapaan di header beranda: kata pertama dari [name], supaya Agen, Driver, dan Klien konsisten.
+ * Nama usaha berawalan "Agen " (mis. "Agen Sumber Rejeki") dipakai utuh karena kata pertamanya cuma "Agen".
+ * Kalau [name] kosong, dipakai [fallback].
+ */
+fun firstNameOf(name: String, fallback: String): String {
+    val trimmed = name.trim()
+    if (trimmed.isEmpty()) return fallback
+    if (trimmed.startsWith("agen ", ignoreCase = true)) return trimmed
+    return trimmed.substringBefore(' ')
+}
+
 // ---------------------------------------------------------------- tanggal & waktu
 
 /** Hari sejak 1970-01-01 dari tanggal sipil (algoritma Howard Hinnant). */
@@ -102,7 +114,7 @@ fun parseIsoMillis(iso: String?): Long? {
     val millis = if (g[7].isEmpty()) 0 else g[7].padEnd(3, '0').take(3).toInt()
 
     var result = daysFromCivil(year, month, day) * MS_PER_DAY +
-        hour * 3_600_000L + minute * 60_000L + second * 1_000L + millis
+            hour * 3_600_000L + minute * 60_000L + second * 1_000L + millis
 
     val zone = g[8]
     if (zone.isNotEmpty() && zone != "Z") {

@@ -27,9 +27,7 @@ import id.biojelan.app.core.googleMapsDirectionsUrl
 import id.biojelan.app.data.repository.UserRepository
 import id.biojelan.app.ui.components.AvatarBox
 import id.biojelan.app.ui.components.BioButton
-import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.BtnStyle
-import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.EmptyBlock
 import id.biojelan.app.ui.components.InfoItem
 import id.biojelan.app.ui.components.MapPreview
@@ -65,8 +63,6 @@ fun AgenDetailScreen(agenId: String, onBack: () -> Unit, users: UserRepository =
                 AvatarBox(agenInitials(agen.name), size = 56.dp)
                 Column(Modifier.weight(1f)) {
                     Text(agen.name, style = BioTheme.type.headline, color = c.ink)
-                    Spacer(Modifier.height(4.dp))
-                    BioChip(if (agen.isOpen) s.open else s.closed, if (agen.isOpen) ChipKind.Open else ChipKind.Closed)
                 }
             }
 

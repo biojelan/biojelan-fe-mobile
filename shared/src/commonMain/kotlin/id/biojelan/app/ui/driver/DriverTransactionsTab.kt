@@ -76,7 +76,7 @@ fun DriverTransactionsTab(state: DriverUiState, vm: DriverViewModel, onNewTransa
         ) {
             item {
                 ScreenTopBar(s.transactionsTitle, actions = {
-                    CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload, loading = state.loading)
+                    CircleIconButton(BioIcons.Refresh, onClick = vm::manualRefresh, contentDescription = s.reload, loading = state.loading)
                 })
             }
             item {
@@ -120,7 +120,7 @@ fun DriverTransactionsTab(state: DriverUiState, vm: DriverViewModel, onNewTransa
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(BioIcons.Plus, contentDescription = null, tint = c.onPrimary, modifier = Modifier.size(18.dp))
-            Text(s.transactionButton, style = BioTheme.type.button, color = c.onPrimary)
+            Text(s.driverRecordButton, style = BioTheme.type.button, color = c.onPrimary)
         }
     }
 

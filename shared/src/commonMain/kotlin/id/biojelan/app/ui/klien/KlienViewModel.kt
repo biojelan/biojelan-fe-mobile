@@ -16,6 +16,7 @@ import id.biojelan.app.data.repository.TxStatus
 import id.biojelan.app.data.repository.UserRepository
 import id.biojelan.app.data.repository.txStatus
 import id.biojelan.app.ui.BaseViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
 data class KlienUiState(
@@ -86,17 +88,25 @@ class KlienViewModel(
         if (hasNew) toast("Ada transaksi baru yang menunggu persetujuan Anda")
     }
 
-    fun refreshAll() {
-        loadAgens()
-        loadTransactions()
+    fun refreshAll(): Job = viewModelScope.launch {
+        val price = launch {
+            val value = priceProvider.pricePerLiter()
+            _state.update { it.copy(price = value) }
+        }
+        joinAll(loadAgens(), loadTransactions(), price)
+    }
+
+    /** Dipanggil tombol muat ulang: [refreshAll] lalu notifikasi "data sudah terbaru" kalau tidak ada yang gagal. */
+    fun manualRefresh() {
         viewModelScope.launch {
-            val price = priceProvider.pricePerLiter()
-            _state.update { it.copy(price = price) }
+            refreshAll().join()
+            val st = _state.value
+            if (st.agensError == null && st.txError == null) toastUpToDate()
         }
     }
 
-    fun loadAgens() {
-        viewModelScope.launch {
+    fun loadAgens(): Job {
+        return viewModelScope.launch {
             val hadData = _state.value.agens.isNotEmpty()
             _state.update { it.copy(agensLoading = true, agensError = null) }
             when (val result = users.listAgen()) {
@@ -110,9 +120,9 @@ class KlienViewModel(
         }
     }
 
-    fun loadTransactions() {
+    fun loadTransactions(): Job {
         cancelAutoRefresh()
-        viewModelScope.launch {
+        return viewModelScope.launch {
             val hadData = _state.value.transactions.isNotEmpty()
             _state.update { it.copy(txLoading = true, txError = null) }
             // Server mengenali Klien dari token, jadi tidak perlu klien_id.

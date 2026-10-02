@@ -120,7 +120,6 @@ data class UpdateAgenRequest(
     @SerialName("open_at") val openAt: String? = null,
     @SerialName("close_at") val closeAt: String? = null,
     @SerialName("open_days") val openDays: List<String>? = null,
-    @SerialName("is_open") val isOpen: Boolean? = null,
 )
 
 // ============================================================ Transaction (Agen → Klien)

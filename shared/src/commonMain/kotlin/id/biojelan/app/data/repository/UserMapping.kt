@@ -27,7 +27,6 @@ fun UserDto.toUpdateRequest(
     name: String = this.name,
     phone: String = this.phone,
     agenEdit: AgenEdit? = null,
-    isOpen: Boolean? = null,
 ): UpdateUserRequest {
     val a = agen
     val agenRequest = if (a == null) null else UpdateAgenRequest(
@@ -39,7 +38,6 @@ fun UserDto.toUpdateRequest(
         openAt = agenEdit?.openAt ?: a.openAt,
         closeAt = agenEdit?.closeAt ?: a.closeAt,
         openDays = agenEdit?.openDays ?: a.openDays,
-        isOpen = isOpen ?: a.isOpen,
     )
     return UpdateUserRequest(name = name, phone = phone, agen = agenRequest)
 }

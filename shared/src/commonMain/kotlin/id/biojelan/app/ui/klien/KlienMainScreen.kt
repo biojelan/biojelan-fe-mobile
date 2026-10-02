@@ -72,7 +72,7 @@ fun KlienMainScreen(
                         onGoTo = { tab = it },
                         onShowId = { showId = true },
                     )
-                    1 -> KlienLocatorTab(state = state, onRefresh = vm::refreshAll, onOpenAgen = onOpenAgen)
+                    1 -> KlienLocatorTab(state = state, onRefresh = vm::manualRefresh, onOpenAgen = onOpenAgen)
                     2 -> KlienHistoryTab(state = state, vm = vm)
                     else -> user?.let { ProfileTab(it, account) }
                 }

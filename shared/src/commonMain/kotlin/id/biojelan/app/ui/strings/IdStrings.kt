@@ -195,7 +195,7 @@ object IdStrings : BioStrings {
     override val driverPickupSection = "Penjemputan hari ini"
     override val driverIdleTitle = "Siap menerima penugasan"
     override val driverIdleLive = "Memantau penugasan"
-    override val driverIdleRecord = "Catat pengambilan"
+    override val driverRecordButton = "Catat pengambilan"
     override val driverIdleHistory = "Riwayat"
     override val driverPickupAssigned = "Anda ditugaskan"
     override val driverPickupNoteAssigned = "Kilang menugaskan Anda menjemput minyak dari Agen. Mulai perjalanan saat berangkat."

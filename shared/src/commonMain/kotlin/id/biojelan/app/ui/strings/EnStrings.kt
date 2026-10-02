@@ -194,7 +194,7 @@ object EnStrings : BioStrings {
     override val driverPickupSection = "Today's pickup"
     override val driverIdleTitle = "Ready for assignments"
     override val driverIdleLive = "Watching for assignments"
-    override val driverIdleRecord = "Record collection"
+    override val driverRecordButton = "Record collection"
     override val driverIdleHistory = "History"
     override val driverPickupAssigned = "You are assigned"
     override val driverPickupNoteAssigned = "The Refinery assigned you to collect oil from an Agent. Start the trip when you leave."

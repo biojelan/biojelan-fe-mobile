@@ -16,19 +16,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.biojelan.app.core.agenInitials
+import id.biojelan.app.core.firstNameOf
 import id.biojelan.app.core.formatLiter
 import id.biojelan.app.core.formatRupiah
 import id.biojelan.app.core.greeting
@@ -36,14 +35,11 @@ import id.biojelan.app.data.remote.AgenSummaryDto
 import id.biojelan.app.data.remote.TransactionDto
 import id.biojelan.app.ui.Viewer
 import id.biojelan.app.ui.components.BioButton
-import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.AvatarBox
 import id.biojelan.app.ui.components.BtnStyle
-import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.LoadingBlock
-import id.biojelan.app.ui.components.NoteTone
 import id.biojelan.app.ui.components.PriceBand
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.SectionHead
@@ -64,7 +60,7 @@ fun KlienHomeTab(
 ) {
     val c = BioTheme.colors
     val s = BioText.current
-    val firstName = name.trim().substringBefore(' ').ifBlank { s.defaultNickname }
+    val firstName = firstNameOf(name, s.defaultNickname)
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
     ) {
@@ -74,7 +70,7 @@ fun KlienHomeTab(
                 Text(firstName, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             CircleIconButton(
-                BioIcons.Refresh, onClick = vm::refreshAll, contentDescription = s.reload,
+                BioIcons.Refresh, onClick = vm::manualRefresh, contentDescription = s.reload,
                 loading = state.txLoading || state.agensLoading,
             )
         }
@@ -155,8 +151,6 @@ private fun AgenMiniCard(agen: AgenSummaryDto, onClick: () -> Unit) {
                 Text(agen.address, style = BioTheme.type.small, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        Spacer(Modifier.height(10.dp))
-        BioChip(if (agen.isOpen) s.open else s.closed, if (agen.isOpen) ChipKind.Open else ChipKind.Closed)
     }
 }
 

@@ -87,7 +87,7 @@ fun AgenTransactionsTab(state: AgenUiState, vm: AgenViewModel, onNewTransaction:
         ) {
             item {
                 ScreenTopBar(s.transactionsTitle, actions = {
-                    CircleIconButton(BioIcons.Refresh, onClick = vm::refresh, contentDescription = s.reload, loading = state.loading)
+                    CircleIconButton(BioIcons.Refresh, onClick = vm::manualRefresh, contentDescription = s.reload, loading = state.loading)
                 })
             }
             item {

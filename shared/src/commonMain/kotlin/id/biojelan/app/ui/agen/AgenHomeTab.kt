@@ -1,9 +1,5 @@
 package id.biojelan.app.ui.agen
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,23 +10,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.biojelan.app.core.AppConfig
-import id.biojelan.app.core.agenInitials
 import id.biojelan.app.core.formatLiter
 import id.biojelan.app.core.formatNumber
 import id.biojelan.app.core.formatRelativeDateTime
 import id.biojelan.app.core.formatRupiah
+import id.biojelan.app.core.firstNameOf
 import id.biojelan.app.core.formatRupiahCompact
 import id.biojelan.app.core.greeting
 import id.biojelan.app.core.initialsOf
@@ -45,8 +38,6 @@ import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.rememberHeldLoading
 import id.biojelan.app.ui.components.BioChip
 import id.biojelan.app.ui.components.ChipKind
-import id.biojelan.app.ui.components.Drip
-import id.biojelan.app.ui.components.JerrycanGauge
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.FadeInItem
 import id.biojelan.app.ui.components.NoteBox
@@ -57,7 +48,6 @@ import id.biojelan.app.ui.components.SectionHead
 import id.biojelan.app.ui.components.StatCard
 import id.biojelan.app.ui.components.StockHeroCard
 import id.biojelan.app.ui.components.TxRow
-import id.biojelan.app.ui.components.bioCard
 import id.biojelan.app.ui.counterpartName
 import id.biojelan.app.ui.icons.BioIcons
 import id.biojelan.app.ui.label
@@ -75,6 +65,7 @@ fun AgenHomeTab(
     val c = BioTheme.colors
     val s = BioText.current
     val agen = user.agen
+    val firstName = firstNameOf(user.name, s.roleAgent)
     val stock = agen?.stockLiter ?: 0.0
     val threshold = AppConfig.STOCK_THRESHOLD_LITER
     val reached = stock >= threshold
@@ -82,12 +73,9 @@ fun AgenHomeTab(
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
     ) {
-        Row(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(greeting() + ",", style = BioTheme.type.body, color = c.muted)
-                Text(user.name, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            OpenTogglePill(isOpen = agen?.isOpen == true, busy = state.togglingOpen, onClick = vm::toggleOpen)
+        Column(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 16.dp)) {
+            Text(greeting() + ",", style = BioTheme.type.body, color = c.muted)
+            Text(firstName, style = BioTheme.type.headline, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
 
         PriceBand(state.price, s.priceCaptionAgen)
@@ -176,36 +164,10 @@ fun AgenHomeTab(
 
         Spacer(Modifier.height(18.dp))
         BioButton(
-            s.reload, vm::refresh, Modifier.fillMaxWidth(),
+            s.reload, vm::manualRefresh, Modifier.fillMaxWidth(),
             style = BtnStyle.Outline,
             loading = rememberHeldLoading(state.loading),
             icon = BioIcons.Refresh,
         )
-    }
-}
-
-@Composable
-private fun OpenTogglePill(isOpen: Boolean, busy: Boolean, onClick: () -> Unit) {
-    val c = BioTheme.colors
-    val s = BioText.current
-    val bg by animateColorAsState(
-        targetValue = if (isOpen) c.primaryTint else c.rustTint,
-        animationSpec = tween(150),
-    )
-    val fg by animateColorAsState(
-        targetValue = if (isOpen) c.primary else c.rust,
-        animationSpec = tween(150),
-    )
-    Row(
-        Modifier
-            .clip(RoundedCornerShape(50))
-            .background(bg, RoundedCornerShape(50))
-            .clickable(enabled = !busy, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-    ) {
-        Drip(fg)
-        Text(if (isOpen) s.open else s.closed, style = BioTheme.type.chip, color = fg)
     }
 }

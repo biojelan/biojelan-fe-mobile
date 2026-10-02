@@ -202,7 +202,7 @@ interface BioStrings {
     val driverPickupSection: String
     val driverIdleTitle: String
     val driverIdleLive: String
-    val driverIdleRecord: String
+    val driverRecordButton: String
     val driverIdleHistory: String
     val driverPickupAssigned: String
     val driverPickupNoteAssigned: String

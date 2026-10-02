@@ -12,11 +12,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,12 +25,9 @@ import id.biojelan.app.core.agenInitials
 import id.biojelan.app.core.formatOperatingHours
 import id.biojelan.app.data.remote.AgenSummaryDto
 import id.biojelan.app.ui.components.AvatarBox
-import id.biojelan.app.ui.components.BioChip
-import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.EmptyBlock
 import id.biojelan.app.ui.components.ErrorBlock
-import id.biojelan.app.ui.components.FilterPill
 import id.biojelan.app.ui.components.LoadingBlock
 import id.biojelan.app.ui.components.MapPreview
 import id.biojelan.app.ui.components.ScreenPad
@@ -49,14 +46,12 @@ fun KlienLocatorTab(
 ) {
     val s = BioText.current
     var query by rememberSaveable { mutableStateOf("") }
-    var onlyOpen by rememberSaveable { mutableStateOf(false) }
 
-    val filtered = remember(state.agens, query, onlyOpen) {
+    val filtered = remember(state.agens, query) {
         val q = query.trim().lowercase()
         state.agens
-            .filter { !onlyOpen || it.isOpen }
             .filter { q.isEmpty() || it.name.lowercase().contains(q) || it.address.lowercase().contains(q) }
-            .sortedWith(compareByDescending<AgenSummaryDto> { it.isOpen }.thenBy { it.name.lowercase() })
+            .sortedWith(compareBy<AgenSummaryDto> { it.name.lowercase() })
     }
 
     LazyColumn(
@@ -70,12 +65,6 @@ fun KlienLocatorTab(
             })
         }
         item { SearchField(query, { query = it }, "Cari nama atau alamat Agen", Modifier.padding(horizontal = ScreenPad)) }
-        item {
-            Row(Modifier.padding(horizontal = ScreenPad), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterPill("Semua", selected = !onlyOpen, onClick = { onlyOpen = false })
-                FilterPill(s.open, selected = onlyOpen, onClick = { onlyOpen = true })
-            }
-        }
         if (filtered.isNotEmpty()) {
             item {
                 MapPreview(
@@ -88,7 +77,7 @@ fun KlienLocatorTab(
             state.agensLoading && state.agens.isEmpty() -> item { LoadingBlock() }
             state.agensError != null && state.agens.isEmpty() -> item { ErrorBlock(state.agensError, onRefresh) }
             filtered.isEmpty() -> item {
-                EmptyBlock(BioIcons.Search, "Agen tidak ditemukan", "Coba kata kunci lain atau hapus filter.")
+                EmptyBlock(BioIcons.Search, "Agen tidak ditemukan", "Coba kata kunci lain.")
             }
             else -> items(filtered) { agen ->
                 AgenRow(agen, Modifier.padding(horizontal = ScreenPad)) { onOpenAgen(agen.agenId) }
@@ -118,6 +107,5 @@ private fun AgenRow(agen: AgenSummaryDto, modifier: Modifier = Modifier, onClick
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        BioChip(if (agen.isOpen) s.open else s.closed, if (agen.isOpen) ChipKind.Open else ChipKind.Closed)
     }
 }

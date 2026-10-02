@@ -19,6 +19,7 @@ import id.biojelan.app.data.repository.UserRepository
 import id.biojelan.app.data.repository.TxStatus
 import id.biojelan.app.data.repository.txStatus
 import id.biojelan.app.ui.BaseViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -124,9 +125,9 @@ class DriverViewModel(
     }
 
     /** GET /api/driver/transactions dan GET /api/driver/pickup/status. */
-    fun refresh() {
+    fun refresh(): Job {
         cancelAutoRefresh()
-        viewModelScope.launch {
+        return viewModelScope.launch {
             val hadData = _state.value.transactions.isNotEmpty()
             _state.update { it.copy(loading = true, error = null) }
             launch { refreshPickup() }
@@ -140,6 +141,15 @@ class DriverViewModel(
                     if (hadData) toast(result.message)
                 }
             }
+        }
+    }
+
+    /** Dipanggil tombol muat ulang: [refresh] lalu notifikasi "data sudah terbaru" kalau tidak ada yang gagal. */
+    fun manualRefresh() {
+        viewModelScope.launch {
+            refresh().join()
+            val st = _state.value
+            if (st.error == null && st.pickupError == null) toastUpToDate()
         }
     }
 

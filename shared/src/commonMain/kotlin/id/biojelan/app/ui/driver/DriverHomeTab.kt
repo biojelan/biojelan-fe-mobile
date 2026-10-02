@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import id.biojelan.app.core.firstNameOf
 import id.biojelan.app.core.formatLiter
 import id.biojelan.app.core.formatNumber
 import id.biojelan.app.core.formatRelativeDateTime
@@ -75,7 +76,7 @@ fun DriverHomeTab(
 ) {
     val c = BioTheme.colors
     val s = BioText.current
-    val firstName = name.trim().substringBefore(' ').ifBlank { s.roleDriver }
+    val firstName = firstNameOf(name, s.roleDriver)
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = ScreenPad).padding(bottom = 24.dp),
@@ -150,7 +151,7 @@ fun DriverHomeTab(
 
         Spacer(Modifier.height(18.dp))
         BioButton(
-            s.reload, vm::refresh, Modifier.fillMaxWidth(),
+            s.reload, vm::manualRefresh, Modifier.fillMaxWidth(),
             style = BtnStyle.Outline,
             loading = rememberHeldLoading(state.loading),
             icon = BioIcons.Refresh,
@@ -263,7 +264,7 @@ private fun DriverIdleState(onRecord: () -> Unit, onHistory: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DriverIdleScene(title = s.driverIdleTitle, liveText = s.driverIdleLive)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            BioButton(s.driverIdleRecord, onRecord, Modifier.weight(1f), icon = BioIcons.Plus)
+            BioButton(s.driverRecordButton, onRecord, Modifier.weight(1f), icon = BioIcons.Plus)
             BioButton(s.driverIdleHistory, onHistory, Modifier.weight(1f), style = BtnStyle.Outline, icon = BioIcons.Receipt)
         }
     }
