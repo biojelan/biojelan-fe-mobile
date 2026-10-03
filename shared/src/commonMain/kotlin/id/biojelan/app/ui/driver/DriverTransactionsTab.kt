@@ -153,7 +153,7 @@ fun DriverTransactionsTab(state: DriverUiState, vm: DriverViewModel, onNewTransa
 }
 
 @Composable
-private fun DriverTxDetailSheet(
+internal fun DriverTxDetailSheet(
     tx: DriverTransactionDto,
     busy: Boolean,
     agenLocation: AgenSummaryDto?,

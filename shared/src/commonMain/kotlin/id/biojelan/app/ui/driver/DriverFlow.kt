@@ -30,14 +30,14 @@ import id.biojelan.app.ui.strings.BioText
 import id.biojelan.app.ui.theme.BioTheme
 import org.koin.compose.viewmodel.koinViewModel
 
-/** Alur pengguna berperan Driver (`role_id` 5): satu layar dengan 3 tab — Beranda, Transaksi, Profil. */
+/** Alur pengguna berperan Driver (`role_id` 5): satu layar dengan 3 tab — Beranda, Riwayat (rute), Profil. */
 @Composable
 fun DriverFlow(vm: DriverViewModel = koinViewModel(), account: AccountViewModel = koinViewModel()) {
     val c = BioTheme.colors
     val s = BioText.current
     val tabs = listOf(
         TabItem(s.tabHome, BioIcons.Home),
-        TabItem(s.tabTransactions, BioIcons.Receipt),
+        TabItem(s.tabRouteHistory, BioIcons.Clock),
         TabItem(s.tabProfile, BioIcons.User),
     )
     val state by vm.state.collectAsStateWithLifecycle()
@@ -63,7 +63,7 @@ fun DriverFlow(vm: DriverViewModel = koinViewModel(), account: AccountViewModel 
                         onNewTransaction = { prefillContact = ""; showNew = true },
                         onRecordFor = { contact -> prefillContact = contact; showNew = true },
                     )
-                    1 -> DriverTransactionsTab(state, vm, onNewTransaction = { prefillContact = ""; showNew = true })
+                    1 -> DriverRouteHistoryTab(state, vm)
                     else -> user?.let { ProfileTab(it, account) }
                 }
             }

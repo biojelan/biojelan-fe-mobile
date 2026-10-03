@@ -54,6 +54,14 @@ interface BioStrings {
     val tabFindAgent: String
     val tabTransactions: String
     val tabStock: String
+    val tabPickup: String
+    val pickupTitle: String
+    val pickupIdLabel: String
+    val pickupInfoUpdated: String
+    val pickupInfoVolume: String
+    val pickupInfoVolumeValue: String
+    val pickupCancelledNote: String
+    val pickupAwaitingYouNote: String
     val tabHistory: String
     val tabProfile: String
 
@@ -206,6 +214,16 @@ interface BioStrings {
     val driverIdleLive: String
     val driverRecordButton: String
     val driverIdleHistory: String
+    val tabRouteHistory: String
+    val routeHistoryTitle: String
+    fun routeHistoryItem(date: String): String
+    val routeHistoryAgenLabel: String
+    val routeHistoryCollectedLabel: String
+    val routeHistorySpanLabel: String
+    fun routeHistoryAwaiting(count: Int): String
+    val routeHistoryNote: String
+    val routeHistoryEmptyTitle: String
+    val routeHistoryEmptyHint: String
     val driverPickupAssigned: String
     val driverPickupNoteAssigned: String
     val driverPickupOtw: String

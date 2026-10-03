@@ -1,21 +1,14 @@
 package id.biojelan.app.ui.agen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,11 +20,8 @@ import id.biojelan.app.core.formatLiter
 import id.biojelan.app.core.formatNumber
 import id.biojelan.app.core.formatRelativeDateTime
 import id.biojelan.app.core.initialsOf
-import id.biojelan.app.data.remote.PickupStatusDto
 import id.biojelan.app.data.remote.UserDto
-import id.biojelan.app.data.repository.PickupStatus
 import id.biojelan.app.data.repository.TxStatus
-import id.biojelan.app.data.repository.pickupStatus
 import id.biojelan.app.data.repository.txStatus
 import id.biojelan.app.ui.Viewer
 import id.biojelan.app.ui.components.BioChip
@@ -45,7 +35,6 @@ import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.ScreenTopBar
 import id.biojelan.app.ui.components.SectionHead
 import id.biojelan.app.ui.components.TxRow
-import id.biojelan.app.ui.components.bioCard
 import id.biojelan.app.ui.counterpartName
 import id.biojelan.app.ui.icons.BioIcons
 import id.biojelan.app.ui.strings.BioText
@@ -83,11 +72,6 @@ fun AgenStockTab(state: AgenUiState, user: UserDto, vm: AgenViewModel) {
             )
             Spacer(Modifier.height(16.dp))
             NoteBox(s.stockThresholdInfo, icon = BioIcons.Info)
-        }
-
-        Column(Modifier.padding(horizontal = ScreenPad)) {
-            SectionHead(s.pickupSectionTitle)
-            PickupStatusCard(state.pickup, state.pickupLoading, state.pickupError, onRetry = vm::refresh)
         }
 
         Column(Modifier.padding(horizontal = ScreenPad)) {
@@ -141,59 +125,5 @@ fun AgenStockTab(state: AgenUiState, user: UserDto, vm: AgenViewModel) {
                 }
             }
         }
-    }
-}
-
-/**
- * Kartu status penjemputan Driver (GET /api/agen/pickup/status). Terpisah dari ambang stok
- * di atas karena Kilang bisa menjadwalkan penjemputan kapan saja, bukan cuma saat stok penuh.
- */
-@Composable
-private fun PickupStatusCard(pickup: PickupStatusDto?, loading: Boolean, error: String?, onRetry: () -> Unit) {
-    val c = BioTheme.colors
-    val s = BioText.current
-
-    if (pickup == null) {
-        if (loading) {
-            Row(Modifier.fillMaxWidth().bioCard(16.dp).padding(20.dp), horizontalArrangement = Arrangement.Center) {
-                CircularProgressIndicator(color = c.primary, strokeWidth = 3.dp, modifier = Modifier.size(20.dp))
-            }
-        } else if (error != null) {
-            // Gagal memuat ≠ tidak ada penjemputan: jangan tampilkan "belum dijadwalkan".
-            ErrorBlock(error, onRetry)
-        } else {
-            NoteBox(s.pickupNoneScheduled, icon = BioIcons.Truck)
-        }
-        return
-    }
-
-    val status = pickup.pickupStatus
-    val (title, note, kind) = when (status) {
-        PickupStatus.Assigned -> Triple(s.pickupStatusAssigned, s.pickupNoteAssigned, ChipKind.Pending)
-        PickupStatus.OnTheWay -> Triple(s.pickupStatusOtw, s.pickupNoteOtw, ChipKind.Pending)
-        PickupStatus.Arrived -> Triple(s.pickupStatusArrived, s.pickupNoteArrived, ChipKind.Pending)
-        PickupStatus.Completed -> Triple(s.pickupStatusCompleted, s.pickupNoteCompleted, ChipKind.Done)
-        PickupStatus.Cancelled -> Triple(s.pickupStatusCancelled, "", ChipKind.Cancelled)
-        PickupStatus.Unknown -> Triple(pickup.status, "", ChipKind.Neutral)
-    }
-    val (iconBg, iconFg) = when (kind) {
-        ChipKind.Done -> c.primaryTint to c.primary
-        ChipKind.Cancelled -> c.rustTint to c.rust
-        ChipKind.Pending -> c.amberTint to c.amberText
-        else -> c.line to c.inkSoft
-    }
-
-    Column(Modifier.fillMaxWidth().bioCard(16.dp).padding(14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(40.dp).background(iconBg, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                Icon(BioIcons.Truck, contentDescription = null, tint = iconFg, modifier = Modifier.size(20.dp))
-            }
-            Column(Modifier.weight(1f)) {
-                Text(title, style = BioTheme.type.cardTitle, color = c.ink)
-                if (note.isNotBlank()) Text(note, style = BioTheme.type.small, color = c.muted)
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        BioChip(s.pickupUpdatedAt(formatRelativeDateTime(pickup.updatedAt)), ChipKind.Neutral)
     }
 }

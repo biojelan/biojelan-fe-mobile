@@ -30,7 +30,7 @@ import id.biojelan.app.ui.strings.BioText
 import id.biojelan.app.ui.theme.BioTheme
 import org.koin.compose.viewmodel.koinViewModel
 
-/** Alur pengguna berperan Agen: satu layar dengan 4 tab. */
+/** Alur pengguna berperan Agen: satu layar dengan 5 tab — Beranda, Transaksi, Stok, Pickup, Profil. */
 @Composable
 fun AgenFlow(vm: AgenViewModel = koinViewModel(), account: AccountViewModel = koinViewModel()) {
     val c = BioTheme.colors
@@ -39,6 +39,7 @@ fun AgenFlow(vm: AgenViewModel = koinViewModel(), account: AccountViewModel = ko
         TabItem(s.tabHome, BioIcons.Home),
         TabItem(s.tabTransactions, BioIcons.Receipt),
         TabItem(s.tabStock, BioIcons.Jerrycan),
+        TabItem(s.tabPickup, BioIcons.Truck),
         TabItem(s.tabProfile, BioIcons.User),
     )
     val state by vm.state.collectAsStateWithLifecycle()
@@ -60,6 +61,7 @@ fun AgenFlow(vm: AgenViewModel = koinViewModel(), account: AccountViewModel = ko
                         0 -> AgenHomeTab(state, current, vm, onNewTransaction = { showNew = true }, onGoTo = { tab = it })
                         1 -> AgenTransactionsTab(state, vm, onNewTransaction = { showNew = true })
                         2 -> AgenStockTab(state, current, vm)
+                        3 -> AgenPickupTab(state, vm)
                         else -> ProfileTab(current, account)
                     }
                 }
