@@ -44,6 +44,7 @@ fun DriverFlow(vm: DriverViewModel = koinViewModel(), account: AccountViewModel 
     val user by vm.user.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(0) }
     var showNew by remember { mutableStateOf(false) }
+    var prefillContact by remember { mutableStateOf("") }
     val toast = rememberToastState()
 
     CollectMessages(vm.messages, toast)
@@ -59,9 +60,10 @@ fun DriverFlow(vm: DriverViewModel = koinViewModel(), account: AccountViewModel 
                         name = user?.name.orEmpty(),
                         vm = vm,
                         onGoTo = { tab = it },
-                        onNewTransaction = { showNew = true },
+                        onNewTransaction = { prefillContact = ""; showNew = true },
+                        onRecordFor = { contact -> prefillContact = contact; showNew = true },
                     )
-                    1 -> DriverTransactionsTab(state, vm, onNewTransaction = { showNew = true })
+                    1 -> DriverTransactionsTab(state, vm, onNewTransaction = { prefillContact = ""; showNew = true })
                     else -> user?.let { ProfileTab(it, account) }
                 }
             }
@@ -73,6 +75,7 @@ fun DriverFlow(vm: DriverViewModel = koinViewModel(), account: AccountViewModel 
     if (showNew) {
         NewDriverTransactionSheet(
             creating = state.creating,
+            initialContact = prefillContact,
             onSubmit = { contact, volume, note ->
                 vm.createTransaction(contact, volume, note) { showNew = false }
             },

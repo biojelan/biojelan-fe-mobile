@@ -124,6 +124,7 @@ class DriverViewModel(
                 }
             }
         }
+        maybeAutoComplete()
     }
 
     /** GET /api/driver/transactions dan GET /api/driver/pickup/status. */
@@ -143,6 +144,7 @@ class DriverViewModel(
                     if (hadData) toast(result.message)
                 }
             }
+            maybeAutoComplete()
         }
     }
 
@@ -164,13 +166,18 @@ class DriverViewModel(
     }
 
     /**
-     * PATCH /api/driver/pickup/status — ASSIGNED → OTW → COMPLETED, atau CANCELLED. Respons hanya memuat
-     * pickup_id, status, updated_at, jadi hasilnya digabung ke penugasan yang sedang tampil.
+     * PATCH /api/driver/pickup/status — ASSIGNED → OTW → ARRIVED, atau CANCELLED. COMPLETED tidak dikirim
+     * Driver: app menutup penugasan sendiri begitu Agen mengonfirmasi transaksi pengambilan ([maybeAutoComplete]).
+     * Respons hanya memuat pickup_id, status, updated_at, jadi hasilnya digabung ke penugasan yang sedang tampil.
      */
     fun updatePickup(status: PickupStatus) {
+        cancelAutoRefresh()
+        sendPickupStatus(status)
+    }
+
+    private fun sendPickupStatus(status: PickupStatus) {
         val current = _state.value.pickup ?: return
         if (_state.value.pickupBusy) return
-        cancelAutoRefresh()
         viewModelScope.launch {
             _state.update { it.copy(pickupBusy = true) }
             when (val result = pickups.updateDriverStatus(current.pickupId, status)) {
@@ -178,8 +185,9 @@ class DriverViewModel(
                     toast(
                         when (status) {
                             PickupStatus.OnTheWay -> "Status diubah: dalam perjalanan"
-                            PickupStatus.Completed -> "Penjemputan ditandai selesai"
-                            PickupStatus.Cancelled -> "Penjemputan dibatalkan"
+                            PickupStatus.Arrived -> "Status diubah: sudah tiba di lokasi"
+                            PickupStatus.Completed -> "Agen sudah konfirmasi — penjemputan selesai"
+                            PickupStatus.Cancelled -> "Stop dilewati — penugasan dibatalkan"
                             else -> "Status penjemputan diperbarui"
                         },
                     )
@@ -196,6 +204,22 @@ class DriverViewModel(
             }
             _state.update { it.copy(pickupBusy = false) }
         }
+    }
+
+    /** Pickup id yang sudah pernah dicoba ditutup otomatis — supaya kegagalan tidak memicu PATCH berulang tiap polling. */
+    private var autoCompleteTriedFor: String? = null
+
+    /**
+     * Setelah Driver tiba dan mencatat pengambilan, satu-satunya yang ditunggu adalah konfirmasi Agen.
+     * Begitu transaksinya ACCEPTED, penugasan ditandai COMPLETED otomatis (tanpa tombol "Selesai" manual).
+     */
+    private fun maybeAutoComplete() {
+        val st = _state.value
+        val pickup = st.pickup ?: return
+        if (st.pickupBusy || autoCompleteTriedFor == pickup.pickupId) return
+        if (!shouldAutoComplete(pickup, st.transactions)) return
+        autoCompleteTriedFor = pickup.pickupId
+        sendPickupStatus(PickupStatus.Completed)
     }
 
     /**

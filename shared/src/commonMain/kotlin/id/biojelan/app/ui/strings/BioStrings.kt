@@ -225,6 +225,40 @@ interface BioStrings {
     val driverRouteToday: String
     val driverEstVolume: String
     val driverVisitOrder: String
+    // ---- Driver: rute, daftar stop, detail stop
+    val driverNewTaskTitle: String
+    fun driverNewTaskBody(id: String, agen: String): String
+    fun driverRouteHeadline(count: Int): String
+    fun driverStopLabel(n: Int): String
+    val stopChipWaiting: String
+    val stopChipDone: String
+    val stopChipSkipped: String
+    val stopChipRejected: String
+    val stopChipAwaitingAgen: String
+    val stepAssigned: String
+    val stepOnTheWay: String
+    val stepArrived: String
+    val stepAwaiting: String
+    val stepCompleted: String
+    val driverActionStart: String
+    val driverActionArrive: String
+    val driverActionRecord: String
+    val driverActionAwaiting: String
+    val driverActionDone: String
+    val driverSkipLink: String
+    val driverSkipTitle: String
+    val driverSkipBody: String
+    val driverSkipConfirm: String
+    val driverAwaitingNote: String
+    val driverDoneNote: String
+    val driverRejectedNote: String
+    val driverStopAddress: String
+    val driverStopHours: String
+    val driverStopVolume: String
+    val driverStopVolumeNone: String
+    val driverStopUnknownAgen: String
+    val driverCallAgen: String
+    val driverOpenMaps: String
     val segmentClient: String
     val segmentDriver: String
     val agenDriverNoTransactionsHint: String

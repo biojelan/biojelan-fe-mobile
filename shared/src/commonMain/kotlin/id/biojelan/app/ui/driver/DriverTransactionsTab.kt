@@ -218,11 +218,12 @@ private fun DriverTxDetailSheet(
 @Composable
 fun NewDriverTransactionSheet(
     creating: Boolean,
+    initialContact: String = "",
     onSubmit: (contact: String, volumeLiter: Double, note: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val s = BioText.current
-    var contact by remember { mutableStateOf("") }
+    var contact by remember { mutableStateOf(initialContact) }
     var volumeText by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var errors by remember { mutableStateOf(emptyMap<String, String>()) }
