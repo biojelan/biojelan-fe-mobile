@@ -277,6 +277,16 @@ interface BioStrings {
     val driverStopUnknownAgen: String
     val driverCallAgen: String
     val driverOpenMaps: String
+    val driverNavigate: String
+    val driverProgressTitle: String
+    val driverProgressFrom: String
+    val driverProgressTo: String
+    val driverProgressNone: String
+    val driverKilang: String
+    val driverProgressReturn: String
+    val driverNavigateSub: String
+    val driverMapTapHint: String
+    val driverMapHintBody: String
     val segmentClient: String
     val segmentDriver: String
     val agenDriverNoTransactionsHint: String

@@ -105,6 +105,14 @@ internal fun DriverStopDetail(
             }
         }
 
+        // Navigasi: tombol + hint dalam satu kartu, hanya untuk stop yang belum final dan punya lokasi.
+        if (agen != null && !stop.isFinal && (agen.address.isNotBlank() || agen.latitude != 0.0 || agen.longitude != 0.0)) {
+            NavigateCard(
+                onClick = { uriHandler.openUri(googleMapsDirectionsUrl(agen.latitude, agen.longitude, agen.address)) },
+                modifier = Modifier.padding(horizontal = ScreenPad).padding(top = 12.dp),
+            )
+        }
+
         PickupTimeline(
             activeIndex = when (stop.status) {
                 StopStatus.Assigned -> 0

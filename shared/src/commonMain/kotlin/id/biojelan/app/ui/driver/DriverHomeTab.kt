@@ -28,9 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import id.biojelan.app.core.KilangDefault
 import id.biojelan.app.core.firstNameOf
 import id.biojelan.app.core.formatLiter
+import id.biojelan.app.core.googleMapsDirectionsUrl
 import id.biojelan.app.core.formatNumber
 import id.biojelan.app.core.formatRupiahCompact
 import id.biojelan.app.core.initialsOf
@@ -68,6 +71,9 @@ fun DriverHomeTab(
     val stops = buildRouteStops(state.pickup, state.transactions) { id -> vm.agenLocation(id)?.name }
     var openKey by rememberSaveable { mutableStateOf<String?>(null) }
     var dismissedBannerFor by rememberSaveable { mutableStateOf<String?>(null) }
+    var routeHintDismissed by rememberSaveable { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
+    val named = stops.map { st -> st.copy(name = st.name.ifBlank { vm.agenLocation(st.agenId)?.name.orEmpty() }) }
     val openIndex = stops.indexOfFirst { it.key == openKey }
 
     if (openIndex >= 0) {
@@ -114,7 +120,30 @@ fun DriverHomeTab(
                     ),
                 )
                 Spacer(Modifier.height(16.dp))
-                RouteMapCard(stops)
+                val progress = routeProgress(named)
+                // Tujuan navigasi: Agen stop aktif; setelah semua stop selesai, Kilang bila lokasinya diketahui.
+                val navUrl: String? = when {
+                    progress.to != null -> vm.agenLocation(progress.to.agenId)
+                        ?.takeIf { it.address.isNotBlank() || it.latitude != 0.0 || it.longitude != 0.0 }
+                        ?.let { googleMapsDirectionsUrl(it.latitude, it.longitude, it.address) }
+                    progress.phase == RoutePhase.Finished -> KilangDefault
+                        ?.takeIf { it.hasLocation }
+                        ?.let { googleMapsDirectionsUrl(it.latitude, it.longitude, it.address) }
+                    else -> null
+                }
+                val openMaps: (() -> Unit)? = navUrl?.let { url -> { uriHandler.openUri(url) } }
+                // Titik pertama = Kilang (bila ada koordinat), sisanya stop. Hasil proyeksi dipisah lagi.
+                val projected = projectToMap(
+                    listOf(KilangDefault?.takeIf { it.hasCoordinates }?.let { it.latitude to it.longitude }) +
+                        named.takeLast(MAX_MAP_STOPS).map { st -> vm.agenLocation(st.agenId)?.let { it.latitude to it.longitude } },
+                )
+                RouteMapCard(named, projected.drop(1), projected.first(), onNavigate = openMaps)
+                Spacer(Modifier.height(10.dp))
+                RouteProgressCard(progress)
+                if (openMaps != null && !routeHintDismissed) {
+                    Spacer(Modifier.height(10.dp))
+                    RouteHintBox(onClose = { routeHintDismissed = true })
+                }
 
                 SectionHead(s.driverVisitOrder)
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
