@@ -43,6 +43,7 @@ import id.biojelan.app.ui.components.BioSheet
 import id.biojelan.app.ui.components.BtnStyle
 import id.biojelan.app.ui.components.InfoItem
 import id.biojelan.app.ui.components.NoteBox
+import id.biojelan.app.ui.components.PickupTimeline
 import id.biojelan.app.ui.components.NoteTone
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.SubHeader
@@ -104,7 +105,23 @@ internal fun DriverStopDetail(
             }
         }
 
-        StopStepper(stop.status, Modifier.padding(horizontal = ScreenPad).padding(top = 18.dp, bottom = 4.dp))
+        PickupTimeline(
+            activeIndex = when (stop.status) {
+                StopStatus.Assigned -> 0
+                StopStatus.OnTheWay -> 1
+                StopStatus.Arrived -> 2
+                StopStatus.AwaitingConfirm -> 3
+                StopStatus.Completed -> 5 // semua langkah sudah lewat
+                StopStatus.Skipped, StopStatus.Rejected -> -1
+            },
+            currentNote = if (!stop.isPickup) null else when (stop.status) {
+                StopStatus.Assigned -> s.driverPickupNoteAssigned
+                StopStatus.OnTheWay -> s.driverPickupNoteOtw
+                StopStatus.Arrived -> s.driverPickupNoteArrived
+                else -> null
+            },
+            modifier = Modifier.padding(horizontal = ScreenPad).padding(top = 18.dp, bottom = 4.dp),
+        )
 
         // Info
         Column(
@@ -205,83 +222,6 @@ internal fun DriverStopDetail(
                     Modifier.weight(1f),
                     style = BtnStyle.Rust,
                     loading = busy,
-                )
-            }
-        }
-    }
-}
-
-/**
- * Stepper lima langkah: Assigned → On the Way → Arrived → Menunggu Konfirmasi → Completed
- * (prototype .stepper, minus langkah "Checked"). Stop dilewati/ditolak tidak menyalakan langkah apa pun.
- */
-@Composable
-private fun StopStepper(status: StopStatus, modifier: Modifier = Modifier) {
-    val c = BioTheme.colors
-    val s = BioText.current
-    val steps = listOf(s.stepAssigned, s.stepOnTheWay, s.stepArrived, s.stepAwaiting, s.stepCompleted)
-    val idx = when (status) {
-        StopStatus.Assigned -> 0
-        StopStatus.OnTheWay -> 1
-        StopStatus.Arrived -> 2
-        StopStatus.AwaitingConfirm -> 3
-        StopStatus.Completed -> steps.size // semua langkah sudah lewat
-        StopStatus.Skipped, StopStatus.Rejected -> -1
-    }
-    Row(
-        modifier
-            .fillMaxWidth()
-            .drawBehind {
-                // Garis penghubung digambar sekali di belakang semua lingkaran (z-index seperti prototype).
-                val cell = size.width / steps.size
-                for (i in 1 until steps.size) {
-                    drawLine(
-                        if (i < idx) c.primary else c.line,
-                        Offset(cell * (i - 0.5f), 13.dp.toPx()),
-                        Offset(cell * (i + 0.5f), 13.dp.toPx()),
-                        strokeWidth = 2.dp.toPx(),
-                    )
-                }
-            },
-    ) {
-        steps.forEachIndexed { i, label ->
-            val done = i < idx
-            val now = i == idx
-            Column(
-                Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(
-                    Modifier
-                        .size(26.dp)
-                        .drawBehind { if (now) drawCircle(c.amberTint, radius = 17.dp.toPx()) }
-                        .background(
-                            when {
-                                done -> c.primary
-                                now -> c.amberDeep
-                                else -> c.line
-                            },
-                            RoundedCornerShape(50),
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (done) {
-                        Icon(BioIcons.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
-                    } else {
-                        Text(
-                            (i + 1).toString(),
-                            style = BioTheme.type.chip.copy(fontSize = 10.sp),
-                            color = if (now) Color.White else c.muted,
-                        )
-                    }
-                }
-                Text(
-                    label,
-                    style = BioTheme.type.caption.copy(fontSize = 8.5.sp, lineHeight = 11.sp),
-                    color = if (done || now) c.ink else c.muted,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    modifier = Modifier.padding(top = 6.dp, start = 2.dp, end = 2.dp),
                 )
             }
         }

@@ -1,5 +1,10 @@
 package id.biojelan.app.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.ColumnScope
@@ -42,6 +47,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,13 +63,15 @@ import id.biojelan.app.ui.icons.BioIcons
 import id.biojelan.app.ui.strings.BioText
 import id.biojelan.app.ui.theme.BioTheme
 import org.koin.compose.koinInject
+import kotlin.math.PI
+import kotlin.math.sin
 
 /**
  * Tiga gaya header Beranda. Semuanya berisi sapaan, nama, peran, tanggal, dan tombol lonceng (toggle notifikasi).
  *
  *  - [Avatar]: tanpa kartu. Avatar + sapaan di kiri, tombol lonceng di kanan. Paling ringan.
- *  - [Graphic]: tanpa kartu dan tanpa border. Isi menempel langsung di latar layar, dihiasi busur kontur,
- *    tetes, wash hijau muda, dan gelombang minyak yang memudar, digambar langsung di latar sampai ke tepi atas layar.
+ *  - [Graphic]: tanpa kartu dan tanpa border. Isi menempel langsung di latar layar, dihiasi satu wash hijau
+ *    muda yang memudar dan dua garis gelombang tipis yang mengalir pelan, digambar langsung di latar sampai ke tepi atas layar.
  *    Gaya bawaan; butuh isi Beranda dibungkus [HomeScroll].
  *  - [Card]: kartu gradasi lembut dengan busur kontur dan gelombang minyak (satu bahasa visual dengan kartu stok).
  *  - [Bold]: kartu hijau solid, teks terang. Paling mencolok.
@@ -172,6 +181,14 @@ fun HomeScroll(content: @Composable ColumnScope.() -> Unit) {
 private fun HomeBackdrop(scroll: ScrollState, backdrop: HomeBackdropState) {
     val c = BioTheme.colors
     val statusTop = WindowInsets.statusBars.getTop(LocalDensity.current).toFloat()
+    // Fase gelombang 0..2π, satu putaran penuh = satu siklus mulus. Dibaca di dalam blok gambar (bukan di
+    // composition), jadi tiap frame hanya menggambar ulang kanvas ini, bukan menyusun ulang layar.
+    val phase by rememberInfiniteTransition(label = "headerWave").animateFloat(
+        initialValue = 0f,
+        targetValue = (2 * PI).toFloat(),
+        animationSpec = infiniteRepeatable(tween(WAVE_PERIOD_MS, easing = LinearEasing)),
+        label = "wavePhase",
+    )
     // Tanpa gaya Graphic (mis. Card/Bold) tidak ada yang melapor, jadi tidak ada yang digambar.
     Canvas(Modifier.fillMaxSize()) {
         val hh = backdrop.headerHeight
@@ -182,28 +199,34 @@ private fun HomeBackdrop(scroll: ScrollState, backdrop: HomeBackdropState) {
             val hTop = backdrop.headerTop
             val bottom = hTop + hh
             val region = bottom - top
-            // wash hijau muda di pojok kanan-atas (pengganti gradasi kartu), memudar ke latar
+            // satu-satunya grafis: wash hijau muda di pojok kanan-atas, memudar ke latar
             val glowR = 230.dp.toPx()
             val glowAt = Offset(w, top + region * 0.10f)
             drawCircle(Brush.radialGradient(listOf(c.primaryTint, Color.Transparent), center = glowAt, radius = glowR), glowR, glowAt)
-            // busur kontur, penuh sampai tepi atas layar
-            listOf(46f, 80f, 114f, 148f, 182f).forEach { r ->
-                drawCircle(
-                    c.primary.copy(alpha = 0.12f),
-                    radius = r.dp.toPx(),
-                    center = Offset(w + 8.dp.toPx(), top + region * 0.18f),
-                    style = Stroke(1.5.dp.toPx()),
-                )
-            }
-            // gelombang minyak terisi, memudar ke bawah supaya tidak ada tepi keras
-            val back = Brush.verticalGradient(listOf(c.amber.copy(alpha = 0.26f), c.amber.copy(alpha = 0f)), startY = hTop + hh * 0.62f, endY = bottom)
-            val front = Brush.verticalGradient(listOf(c.amber.copy(alpha = 0.34f), c.amber.copy(alpha = 0f)), startY = hTop + hh * 0.78f, endY = bottom)
-            drawPath(waveFill(w, bottom, hTop + hh * 0.66f, 4.dp.toPx(), 110.dp.toPx(), 0.8f), back)
-            drawPath(waveFill(w, bottom, hTop + hh * 0.80f, 3.dp.toPx(), 80.dp.toPx(), 2.6f), front)
-            // tetes kecil
-            drawCircle(c.amber.copy(alpha = 0.55f), 3.dp.toPx(), Offset(w * 0.66f, hTop + hh * 0.20f))
-            drawCircle(c.amber.copy(alpha = 0.38f), 2.dp.toPx(), Offset(w * 0.73f, hTop + hh * 0.34f))
+            // dua garis gelombang amber tipis yang mengalir pelan di ruang kosong dasar header, memudar ke kiri
+            val stroke = Stroke(1.6.dp.toPx(), cap = StrokeCap.Round)
+            fun fade(alpha: Float) = Brush.horizontalGradient(
+                listOf(Color.Transparent, c.amber.copy(alpha = alpha * 0.8f), c.amber.copy(alpha = alpha)),
+                startX = 0f,
+                endX = w,
+            )
+            drawPath(waveStroke(w, bottom - 17.dp.toPx(), 3.5.dp.toPx(), 120.dp.toPx(), -phase), fade(0.60f), style = stroke)
+            // garis kedua: lebih tipis, berlawanan arah dan dua kali lebih cepat (kelipatan bulat, tetap mulus)
+            drawPath(waveStroke(w, bottom - 11.dp.toPx(), 2.5.dp.toPx(), 80.dp.toPx(), 2f * phase), fade(0.28f), style = stroke)
         }
+    }
+}
+
+/** Satu siklus gelombang header (ms). Makin besar makin pelan. */
+private const val WAVE_PERIOD_MS = 9_000
+
+/** Garis gelombang sinus selebar layar; [phase] menggeser gelombang secara horizontal. */
+private fun waveStroke(w: Float, baseY: Float, amp: Float, length: Float, phase: Float): Path = Path().apply {
+    var x = 0f
+    moveTo(0f, baseY + amp * sin(phase))
+    while (x <= w) {
+        lineTo(x, baseY + amp * sin((x / length) * 2f * PI.toFloat() - phase))
+        x += 6f
     }
 }
 

@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -20,22 +20,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import id.biojelan.app.core.formatLiter
 import id.biojelan.app.core.formatRelativeDateTime
+import id.biojelan.app.core.formatRupiah
 import id.biojelan.app.data.remote.PickupStatusDto
-import id.biojelan.app.ui.components.BioChip
-import id.biojelan.app.ui.components.ChipKind
 import id.biojelan.app.ui.components.CircleIconButton
 import id.biojelan.app.ui.components.ErrorBlock
 import id.biojelan.app.ui.components.NoteBox
 import id.biojelan.app.ui.components.NoteTone
+import id.biojelan.app.ui.components.PickupTimeline
 import id.biojelan.app.ui.components.ScreenPad
 import id.biojelan.app.ui.components.ScreenTopBar
 import id.biojelan.app.ui.components.bioCard
@@ -45,12 +40,11 @@ import id.biojelan.app.ui.strings.BioText
 import id.biojelan.app.ui.theme.BioTheme
 
 /**
- * Tab "Pickup" Agen (prototype #screen-agen-pickup, "Info Pickup"): kartu ID + status dengan stepper lima
- * langkah, lalu info pickup. Kalau Driver sudah mencatat pengambilan dan menunggu Agen, kartu terima/tolak
- * ditampilkan di sini juga (sama dengan yang ada di Beranda).
+ * Tab "Pickup" Agen: kartu status (ID + judul status), kartu terima/tolak bila Driver menunggu jawaban Agen,
+ * timeline lima langkah yang sama dengan app Driver ([PickupTimeline]), lalu satu kartu info.
  *
- * Yang TIDAK ada di prototype ini karena API Agen hanya mengirim `pickup_id`, `status`, `updated_at`:
- * nama Driver & kendaraan, jadwal, estimasi volume, dan daftar Agen dalam satu rute.
+ * Yang TIDAK ada karena API Agen hanya mengirim `pickup_id`, `status`, `updated_at`:
+ * nama Driver & kendaraan, jadwal, dan estimasi tiba.
  */
 @Composable
 fun AgenPickupTab(state: AgenUiState, vm: AgenViewModel) {
@@ -81,10 +75,7 @@ fun AgenPickupTab(state: AgenUiState, vm: AgenViewModel) {
             val step = agenPickupStep(pickup, state.driverTransactions)
             PickupHero(pickup, step, s)
 
-            Spacer(Modifier.height(14.dp))
-            val (note, tone, icon) = stepNote(step, s)
-            if (note.isNotBlank()) NoteBox(note, tone = tone, icon = icon)
-
+            // Permintaan Driver langsung di bawah status: ini satu-satunya hal yang menunggu tindakan Agen.
             if (step == AgenPickupStep.AwaitingConfirm) {
                 state.driverPendingTx?.let { tx ->
                     Spacer(Modifier.height(14.dp))
@@ -98,129 +89,89 @@ fun AgenPickupTab(state: AgenUiState, vm: AgenViewModel) {
             }
 
             Spacer(Modifier.height(14.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                PickupInfoItem(BioIcons.Clock, s.pickupInfoUpdated, formatRelativeDateTime(pickup.updatedAt))
-                requestedPickupVolume(pickup, state.driverTransactions)?.let { liters ->
-                    PickupInfoItem(BioIcons.Jerrycan, s.pickupInfoVolume, formatLiter(liters) + " " + s.pickupInfoVolumeValue)
-                }
+            if (step == AgenPickupStep.Cancelled) {
+                NoteBox(s.pickupCancelledNote, tone = NoteTone.Rust, icon = BioIcons.Alert)
+            } else if (step != AgenPickupStep.Unknown) {
+                PickupTimeline(step.stepperIndex(), stepNote(step, s))
             }
+
+            Spacer(Modifier.height(14.dp))
+            val volume = requestedPickupVolume(pickup, state.driverTransactions)
+            val total = if (volume != null) latestPickupTransaction(pickup, state.driverTransactions)?.totalPrice else null
+            PickupInfoCard(
+                buildList {
+                    add(s.pickupInfoVolume to (volume?.let { formatLiter(it) + " " + s.pickupInfoVolumeValue } ?: s.driverStopVolumeNone))
+                    if (total != null) add(s.total to formatRupiah(total))
+                    add(s.pickupInfoUpdated to formatRelativeDateTime(pickup.updatedAt))
+                },
+            )
         }
     }
 }
 
-private fun stepNote(step: AgenPickupStep, s: BioStrings): Triple<String, NoteTone, ImageVector> = when (step) {
-    AgenPickupStep.Assigned -> Triple(s.pickupNoteAssigned, NoteTone.Amber, BioIcons.Truck)
-    AgenPickupStep.OnTheWay -> Triple(s.pickupNoteOtw, NoteTone.Amber, BioIcons.Truck)
-    AgenPickupStep.Arrived -> Triple(s.pickupNoteArrived, NoteTone.Amber, BioIcons.Truck)
-    AgenPickupStep.AwaitingConfirm -> Triple(s.pickupAwaitingYouNote, NoteTone.Amber, BioIcons.Clock)
-    AgenPickupStep.Completed -> Triple(s.pickupNoteCompleted, NoteTone.Neutral, BioIcons.Check)
-    AgenPickupStep.Cancelled -> Triple(s.pickupCancelledNote, NoteTone.Rust, BioIcons.Alert)
-    AgenPickupStep.Unknown -> Triple("", NoteTone.Amber, BioIcons.Info)
+/** Penjelasan singkat di bawah langkah aktif timeline. */
+private fun stepNote(step: AgenPickupStep, s: BioStrings): String? = when (step) {
+    AgenPickupStep.Assigned -> s.pickupNoteAssigned
+    AgenPickupStep.OnTheWay -> s.pickupNoteOtw
+    AgenPickupStep.Arrived -> s.pickupNoteArrived
+    AgenPickupStep.AwaitingConfirm -> s.pickupAwaitingYouNote
+    AgenPickupStep.Completed -> s.pickupNoteCompleted
+    AgenPickupStep.Cancelled, AgenPickupStep.Unknown -> null
 }
 
-private fun stepChip(step: AgenPickupStep, raw: String, s: BioStrings): Pair<String, ChipKind> = when (step) {
-    AgenPickupStep.Assigned -> s.pickupStatusAssigned to ChipKind.Pending
-    AgenPickupStep.OnTheWay -> s.pickupStatusOtw to ChipKind.Pending
-    AgenPickupStep.Arrived -> s.pickupStatusArrived to ChipKind.Pending
-    AgenPickupStep.AwaitingConfirm -> s.stepAwaiting to ChipKind.Pending
-    AgenPickupStep.Completed -> s.pickupStatusCompleted to ChipKind.Done
-    AgenPickupStep.Cancelled -> s.pickupStatusCancelled to ChipKind.Cancelled
-    AgenPickupStep.Unknown -> raw to ChipKind.Neutral
+/** Judul besar kartu status. */
+private fun stepHeadline(step: AgenPickupStep, raw: String, s: BioStrings): String = when (step) {
+    AgenPickupStep.Assigned -> s.pickupStatusAssigned
+    AgenPickupStep.OnTheWay -> s.pickupStatusOtw
+    AgenPickupStep.Arrived -> s.pickupStatusArrived
+    AgenPickupStep.AwaitingConfirm -> s.stepAwaiting
+    AgenPickupStep.Completed -> s.pickupStatusCompleted
+    AgenPickupStep.Cancelled -> s.pickupStatusCancelled
+    AgenPickupStep.Unknown -> raw
 }
 
-/** Kartu hero (prototype .pickup-hero): ID Pickup + chip status di atas, stepper di bawah. */
+/** Kartu status: ID Pickup (kecil) di atas, judul status besar, waktu pembaruan. Selesai diberi lencana centang. */
 @Composable
 private fun PickupHero(pickup: PickupStatusDto, step: AgenPickupStep, s: BioStrings) {
     val c = BioTheme.colors
-    val (chipText, chipKind) = stepChip(step, pickup.status, s)
-    Column(Modifier.fillMaxWidth().bioCard(20.dp).padding(18.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+    Row(
+        Modifier.fillMaxWidth().bioCard(22.dp).padding(20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        if (step == AgenPickupStep.Completed) {
+            Box(Modifier.size(46.dp).background(c.primary, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(BioIcons.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+            }
+        }
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(s.pickupIdLabel, style = BioTheme.type.small, color = c.muted)
                 Text(pickup.pickupId, style = BioTheme.type.monoSmall, color = c.ink, maxLines = 1)
             }
-            BioChip(chipText, chipKind)
+            Spacer(Modifier.height(6.dp))
+            Text(stepHeadline(step, pickup.status, s), style = BioTheme.type.headline, color = c.ink)
+            Spacer(Modifier.height(2.dp))
+            Text(s.pickupUpdatedAt(formatRelativeDateTime(pickup.updatedAt)), style = BioTheme.type.small, color = c.muted)
         }
-        Spacer(Modifier.height(16.dp))
-        PickupStepper(step.stepperIndex())
     }
 }
 
-/** Stepper lima langkah, tampilan sama dengan stepper stop di app Driver. */
+/** Satu kartu info: baris label (kiri) + nilai (kanan), dipisah garis tipis. */
 @Composable
-private fun PickupStepper(idx: Int) {
+private fun PickupInfoCard(rows: List<Pair<String, String>>) {
     val c = BioTheme.colors
-    val s = BioText.current
-    val steps = listOf(s.stepAssigned, s.stepOnTheWay, s.stepArrived, s.stepAwaiting, s.stepCompleted)
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                val cell = size.width / steps.size
-                for (i in 1 until steps.size) {
-                    drawLine(
-                        if (i < idx) c.primary else c.line,
-                        Offset(cell * (i - 0.5f), 13.dp.toPx()),
-                        Offset(cell * (i + 0.5f), 13.dp.toPx()),
-                        strokeWidth = 2.dp.toPx(),
-                    )
-                }
-            },
-    ) {
-        steps.forEachIndexed { i, label ->
-            val done = i < idx
-            val now = i == idx
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    Modifier
-                        .size(26.dp)
-                        .drawBehind { if (now) drawCircle(c.amberTint, radius = 17.dp.toPx()) }
-                        .background(
-                            when {
-                                done -> c.primary
-                                now -> c.amberDeep
-                                else -> c.line
-                            },
-                            RoundedCornerShape(50),
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (done) {
-                        Icon(BioIcons.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
-                    } else {
-                        Text(
-                            (i + 1).toString(),
-                            style = BioTheme.type.chip.copy(fontSize = 10.sp),
-                            color = if (now) Color.White else c.muted,
-                        )
-                    }
-                }
-                Text(
-                    label,
-                    style = BioTheme.type.caption.copy(fontSize = 8.5.sp, lineHeight = 11.sp),
-                    color = if (done || now) c.ink else c.muted,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    modifier = Modifier.padding(top = 6.dp, start = 2.dp, end = 2.dp),
-                )
+    Column(Modifier.fillMaxWidth().bioCard(18.dp)) {
+        rows.forEachIndexed { i, (label, value) ->
+            if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(label, style = BioTheme.type.small, color = c.muted, modifier = Modifier.weight(1f))
+                Text(value, style = BioTheme.type.label, color = c.ink)
             }
-        }
-    }
-}
-
-/** Satu baris info (prototype .info-item): ikon hijau, label kecil, nilai tebal. */
-@Composable
-private fun PickupInfoItem(icon: ImageVector, label: String, value: String) {
-    val c = BioTheme.colors
-    Row(
-        Modifier.fillMaxWidth().bioCard(14.dp).padding(horizontal = 13.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Icon(icon, contentDescription = null, tint = c.primary, modifier = Modifier.padding(top = 1.dp).size(16.dp))
-        Column {
-            Text(label, style = BioTheme.type.caption, color = c.muted)
-            Text(value, style = BioTheme.type.label, color = c.ink)
         }
     }
 }
