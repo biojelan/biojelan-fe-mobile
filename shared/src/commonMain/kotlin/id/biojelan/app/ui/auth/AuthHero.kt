@@ -4,11 +4,13 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -59,9 +61,7 @@ import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sin
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
 // ------------------------------------------------------------------ transisi Masuk <-> Daftar
@@ -129,15 +129,10 @@ private const val RIPPLE_MAX = 340f
 
 // Timing jatuhnya tetesan. Ubah FALL_MILLIS untuk lebih cepat/lambat; splash & riak otomatis menyusul.
 private const val DROP_DELAY_MILLIS = 260L
-private const val FALL_MILLIS = 1200
+private const val FALL_MILLIS = 1200            // sebelumnya 560
 private const val SPLASH_MILLIS = 1100
-private const val SINK_MILLIS = 700             // tetesan masuk ke permukaan sampai hilang
-private const val SINK_DEPTH = 135f             // jarak tenggelam (unit gambar), cukup untuk menelan seluruh tetesan
-private const val RIPPLE_MILLIS = 4600          // umur riak per tetesan (makin besar = riak makin lambat)
-private const val RIPPLE_COUNT = 2              // jumlah gelombang riak per tetesan
-private const val RIPPLE_START = 0.12f          // jeda riak pertama setelah cincin kejut (pecahan umur riak)
-private const val RIPPLE_STAGGER = 0.22f        // jeda antar gelombang riak
-private const val DRIP_GAP_MILLIS = 300L        // jeda tenang sebelum tetesan berikutnya
+private const val RIPPLE_MILLIS = 7200          // sebelumnya 4200 (makin besar = riak makin lambat)
+private const val RIPPLE_COUNT = 2              // sebelumnya 3 (lebih sedikit = tidak saling tumpuk)
 
 private val Gold = Color(0xFFF0C35E)
 private val GoldMid = Color(0xFFD69A2E)
@@ -227,8 +222,8 @@ private fun DrawScope.drawBleedBackdrop(f: HeroFrame, tint: Color, ring: Color, 
 
 /**
  * Hero di atas form masuk/daftar, lockup "BioJelan" di kiri atas. Lapisan animasi (digambar native):
- * tetesan jatuh dari atas, menyentuh permukaan lalu tenggelam, cincin kejut dan riak menyebar sampai
- * tenang, lalu tetesan berikutnya jatuh; ditambah satu jarum emas yang menyapu dial. Lebih pendek saat mode Daftar.
+ * tetesan jatuh dari atas lalu memantul kecil, cincin kejut sekali, riak yang terus menyebar,
+ * tetesan melayang pelan, dan satu jarum emas yang menyapu dial. Lebih pendek saat mode Daftar.
  */
 @Composable
 internal fun AuthHero(
@@ -243,33 +238,27 @@ internal fun AuthHero(
     val statusTopPx = with(LocalDensity.current) { statusTop.toPx() }
 
     val loop = rememberInfiniteTransition(label = "hero-loop")
+    val ripple = loop.animateFloat(0f, 1f, infiniteRepeatable(tween(RIPPLE_MILLIS, easing = LinearEasing)), label = "ripple")
     val sweep = loop.animateFloat(0f, 1f, infiniteRepeatable(tween(36000, easing = LinearEasing)), label = "sweep")
+    val bob = loop.animateFloat(0f, 1f, infiniteRepeatable(tween(3600, easing = LinearEasing)), label = "bob")
 
-    val fall = remember { Animatable(0f) }       // 0 = di atas bingkai, 1 = menyentuh permukaan
-    val sink = remember { Animatable(0f) }       // 0 = di atas permukaan, 1 = tenggelam seluruhnya
-    val splash = remember { Animatable(0f) }     // cincin kejut saat tetesan menyentuh permukaan
-    val rip = remember { Animatable(0f) }        // umur riak untuk tetesan yang sedang berjalan
-    val needleGate = remember { Animatable(0f) } // jarum dial baru "menyala" setelah tetesan pertama mendarat
+    val fall = remember { Animatable(0f) }       // 0 = di atas bingkai, 1 = mendarat
+    val impact = remember { Animatable(0f) }     // pantulan kecil setelah mendarat
+    val splash = remember { Animatable(0f) }     // cincin kejut satu kali saat mendarat
+    val rippleGate = remember { Animatable(0f) } // riak berulang baru "menyala" setelah mendarat
     LaunchedEffect(Unit) {
         delay(DROP_DELAY_MILLIS)
-        while (true) {
-            fall.snapTo(0f)
-            sink.snapTo(0f)
-            splash.snapTo(0f)
-            rip.snapTo(0f)
-            fall.animateTo(1f, tween(FALL_MILLIS, easing = CubicBezierEasing(0.5f, 0f, 0.9f, 0.5f)))
-            // Sentuh permukaan: tetesan tenggelam, cincin kejut dan riak berjalan bersamaan.
-            coroutineScope {
-                launch { sink.animateTo(1f, tween(SINK_MILLIS, easing = FastOutSlowInEasing)) }
-                launch { splash.animateTo(1f, tween(SPLASH_MILLIS, easing = LinearEasing)) }
-                launch { rip.animateTo(1f, tween(RIPPLE_MILLIS, easing = LinearEasing)) }
-            }
-            delay(DRIP_GAP_MILLIS)
-        }
+        fall.animateTo(1f, tween(FALL_MILLIS, easing = CubicBezierEasing(0.5f, 0f, 0.9f, 0.5f)))
+        impact.snapTo(1f)
+        impact.animateTo(0f, spring(dampingRatio = 0.3f, stiffness = Spring.StiffnessLow))
     }
     LaunchedEffect(Unit) {
-        delay(DROP_DELAY_MILLIS + FALL_MILLIS + SPLASH_MILLIS)
-        needleGate.animateTo(1f, tween(900, easing = FastOutSlowInEasing))
+        delay(DROP_DELAY_MILLIS + FALL_MILLIS)
+        splash.animateTo(1f, tween(SPLASH_MILLIS, easing = LinearEasing))
+    }
+    LaunchedEffect(Unit) {
+        delay(DROP_DELAY_MILLIS + FALL_MILLIS + SPLASH_MILLIS)   // riak mulai setelah cincin kejut selesai
+        rippleGate.animateTo(1f, tween(900, easing = FastOutSlowInEasing))
     }
 
     val drop = remember { dropPath() }
@@ -324,16 +313,13 @@ internal fun AuthHero(
             val cy = f.cy
             val k = f.k
             val twoPi = (2.0 * PI).toFloat()
-            val gate = needleGate.value
+            val gate = rippleGate.value
 
-            // riak: gelombang berselang setelah cincin kejut, melebar lalu memudar sampai permukaan tenang
-            val rv = rip.value
-            val rippleSpan = 1f - RIPPLE_START - (RIPPLE_COUNT - 1) * RIPPLE_STAGGER
+            // riak: tiga gelombang berselang, melebar lalu memudar
             for (i in 0 until RIPPLE_COUNT) {
-                val p = ((rv - RIPPLE_START - i * RIPPLE_STAGGER) / rippleSpan).coerceIn(0f, 1f)
-                if (p <= 0f || p >= 1f) continue
+                val p = (ripple.value + i / RIPPLE_COUNT.toFloat()) % 1f
                 val r = RIPPLE_MIN + (RIPPLE_MAX - RIPPLE_MIN) * (1f - (1f - p) * (1f - p))
-                val a = (1f - p).pow(1.6f) * 0.8f
+                val a = (1f - p).pow(1.6f) * 0.8f * gate
                 drawOval(
                     color = accent.copy(alpha = a),
                     topLeft = Offset(cx - r * k, cy - FLAT * r * k),
@@ -342,7 +328,7 @@ internal fun AuthHero(
                 )
             }
 
-            // cincin kejut saat tetesan menyentuh permukaan
+            // cincin kejut satu kali saat tetesan menyentuh permukaan
             val sp = splash.value
             if (sp > 0f && sp < 1f) {
                 val r = 30f + 250f * (1f - (1f - sp) * (1f - sp))
@@ -370,60 +356,53 @@ internal fun AuthHero(
                 )
             }
 
-            // tetesan: jatuh, menyentuh permukaan, lalu tenggelam (dipotong di garis permukaan)
+            // tetesan: jatuh + memantul, lalu melayang naik-turun pelan
             val fv = fall.value
-            val sk = sink.value
             val dropAlpha = (fv * 6f).coerceIn(0f, 1f)
-            val dy = (fv - 1f) * FALL_DISTANCE + sk * SINK_DEPTH
+            val floatY = sin(bob.value * twoPi) * 2.5f
+            val dy = (fv - 1f) * FALL_DISTANCE + impact.value * 7f + floatY
+            val breath = 0.85f + 0.15f * sin(bob.value * twoPi + 1f)
             val s0 = DROP_SCALE * k
 
-            // pendar di sekitar tetesan, ikut padam saat tenggelam
-            val glow = haloAlpha * dropAlpha * (1f - sk)
-            if (glow > 0f) {
-                val haloCenter = Offset(cx, cy + (-69f + dy) * k)
-                val haloR = 125f * k
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(GoldMid.copy(alpha = glow), GoldMid.copy(alpha = 0f)),
-                        center = haloCenter,
-                        radius = haloR,
-                    ),
-                    radius = haloR,
+            // pendar di sekitar tetesan
+            val haloCenter = Offset(cx, cy + (-69f + dy) * k)
+            val haloR = 125f * k
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(GoldMid.copy(alpha = haloAlpha * breath * dropAlpha), GoldMid.copy(alpha = 0f)),
                     center = haloCenter,
+                    radius = haloR,
+                ),
+                radius = haloR,
+                center = haloCenter,
+            )
+
+            // bayangan di permukaan (muncul saat tetesan mendekat)
+            val near = fv.coerceIn(0f, 1f).pow(6f)
+            withTransform({
+                translate(cx, cy + (16f - dy) * 0.34f * k)
+                scale(s0, -s0 * 0.34f, Offset.Zero)
+                translate(-50f, -118f)
+            }) {
+                drawPath(drop, Gold, alpha = 0.14f * near)
+            }
+
+            // badan tetesan
+            withTransform({
+                translate(cx, cy + (-16f + dy) * k)
+                scale(s0, s0, Offset.Zero)
+                translate(-50f, -118f)
+            }) {
+                drawPath(
+                    path = drop,
+                    brush = Brush.linearGradient(
+                        colors = listOf(Gold, GoldMid, GoldDeep),
+                        start = Offset(0f, 6f),
+                        end = Offset(0f, 118f),
+                    ),
+                    alpha = dropAlpha,
                 )
-            }
-
-            // bayangan di permukaan (muncul saat tetesan mendekat, hilang cepat begitu masuk air)
-            val near = fv.coerceIn(0f, 1f).pow(6f) * (1f - 2f * sk).coerceAtLeast(0f)
-            if (near > 0f) {
-                withTransform({
-                    translate(cx, cy + (16f - dy) * 0.34f * k)
-                    scale(s0, -s0 * 0.34f, Offset.Zero)
-                    translate(-50f, -118f)
-                }) {
-                    drawPath(drop, Gold, alpha = 0.14f * near)
-                }
-            }
-
-            // badan tetesan: bagian di bawah garis permukaan (y = cy) tidak digambar, jadi terlihat masuk ke air
-            if (sk < 1f) {
-                withTransform({
-                    clipRect(left = 0f, top = 0f, right = size.width, bottom = cy)
-                    translate(cx, cy + (-16f + dy) * k)
-                    scale(s0, s0, Offset.Zero)
-                    translate(-50f, -118f)
-                }) {
-                    drawPath(
-                        path = drop,
-                        brush = Brush.linearGradient(
-                            colors = listOf(Gold, GoldMid, GoldDeep),
-                            start = Offset(0f, 6f),
-                            end = Offset(0f, 118f),
-                        ),
-                        alpha = dropAlpha,
-                    )
-                    drawPath(highlight, Color.White, alpha = 0.36f * dropAlpha)
-                }
+                drawPath(highlight, Color.White, alpha = 0.36f * dropAlpha)
             }
 
             if (bleed) {
