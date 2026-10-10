@@ -100,6 +100,11 @@ fun AgenPickupTab(state: AgenUiState, vm: AgenViewModel) {
             val total = if (volume != null) latestPickupTransaction(pickup, state.driverTransactions)?.totalPrice else null
             PickupInfoCard(
                 buildList {
+                    pickup.driver?.name?.takeIf { it.isNotBlank() }?.let { add(s.pickupInfoDriver to it) }
+                    pickup.driver?.let { d ->
+                        listOf(d.typeVehicle, d.plateNumber).filter { it.isNotBlank() }.joinToString(" · ")
+                            .takeIf { it.isNotEmpty() }?.let { add(s.pickupInfoVehicle to it) }
+                    }
                     add(s.pickupInfoVolume to (volume?.let { formatLiter(it) + " " + s.pickupInfoVolumeValue } ?: s.driverStopVolumeNone))
                     if (total != null) add(s.total to formatRupiah(total))
                     add(s.pickupInfoUpdated to formatRelativeDateTime(pickup.updatedAt))

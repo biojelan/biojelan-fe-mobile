@@ -51,6 +51,8 @@ object IdStrings : BioStrings {
     override val tabPickup = "Pickup"
     override val pickupTitle = "Info Pickup"
     override val pickupIdLabel = "ID Pickup"
+    override val pickupInfoDriver = "Driver"
+    override val pickupInfoVehicle = "Kendaraan"
     override val pickupInfoUpdated = "Terakhir diperbarui"
     override val pickupInfoVolume = "Volume diminta Driver"
     override val pickupInfoVolumeValue = "dari lokasi Anda"

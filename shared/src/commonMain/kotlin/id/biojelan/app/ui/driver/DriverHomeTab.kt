@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
-import id.biojelan.app.core.KilangDefault
 import id.biojelan.app.core.firstNameOf
 import id.biojelan.app.core.formatLiter
 import id.biojelan.app.core.googleMapsDirectionsUrl
@@ -126,7 +125,7 @@ fun DriverHomeTab(
                     progress.to != null -> vm.agenLocation(progress.to.agenId)
                         ?.takeIf { it.address.isNotBlank() || it.latitude != 0.0 || it.longitude != 0.0 }
                         ?.let { googleMapsDirectionsUrl(it.latitude, it.longitude, it.address) }
-                    progress.phase == RoutePhase.Finished -> KilangDefault
+                    progress.phase == RoutePhase.Finished -> state.kilang
                         ?.takeIf { it.hasLocation }
                         ?.let { googleMapsDirectionsUrl(it.latitude, it.longitude, it.address) }
                     else -> null
@@ -134,7 +133,7 @@ fun DriverHomeTab(
                 val openMaps: (() -> Unit)? = navUrl?.let { url -> { uriHandler.openUri(url) } }
                 // Titik pertama = Kilang (bila ada koordinat), sisanya stop. Hasil proyeksi dipisah lagi.
                 val projected = projectToMap(
-                    listOf(KilangDefault?.takeIf { it.hasCoordinates }?.let { it.latitude to it.longitude }) +
+                    listOf(state.kilang?.takeIf { it.hasCoordinates }?.let { it.latitude to it.longitude }) +
                         named.takeLast(MAX_MAP_STOPS).map { st -> vm.agenLocation(st.agenId)?.let { it.latitude to it.longitude } },
                 )
                 RouteMapCard(named, projected.drop(1), projected.first(), onNavigate = openMaps)

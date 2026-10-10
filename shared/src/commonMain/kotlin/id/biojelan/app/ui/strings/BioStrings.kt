@@ -57,6 +57,8 @@ interface BioStrings {
     val tabPickup: String
     val pickupTitle: String
     val pickupIdLabel: String
+    val pickupInfoDriver: String
+    val pickupInfoVehicle: String
     val pickupInfoUpdated: String
     val pickupInfoVolume: String
     val pickupInfoVolumeValue: String

@@ -9,6 +9,7 @@ import id.biojelan.app.data.local.SessionStore
 import id.biojelan.app.data.remote.ApiClient
 import id.biojelan.app.data.repository.AuthRepository
 import id.biojelan.app.data.repository.ApiPriceProvider
+import id.biojelan.app.data.repository.FactoryRepository
 import id.biojelan.app.data.repository.PickupRepository
 import id.biojelan.app.data.repository.PriceProvider
 import id.biojelan.app.data.repository.SessionManager
@@ -60,6 +61,7 @@ private val dataModule = module {
     single { TransactionRepository(get(), get()) }
     single { DriverTransactionRepository(get(), get()) }
     single { PickupRepository(get(), get()) }
+    single { FactoryRepository(get(), get()) }
 }
 
 private val viewModelModule = module {

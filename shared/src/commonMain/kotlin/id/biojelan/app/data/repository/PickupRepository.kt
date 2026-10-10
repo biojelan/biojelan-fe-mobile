@@ -30,8 +30,8 @@ val PickupStatusDto.pickupStatus: PickupStatus get() = PickupStatus.from(status)
  * Endpoint pickup — sudah live di backend (`AgentPickupController`, `DriverPickupController`), dicocokkan
  * ke kode BE langsung (bukan cuma `pickup.md`, yang ternyata beda dari implementasi aslinya). Model `Pickup`
  * di DB terikat 1:1 ke satu `TransactionAgent` dan punya field `date`/`time`/`destination`, tapi field-field
- * itu TIDAK diekspos lewat API ini — respons cuma 3 field: `pickup_id` (format `"pkp-007"`), `status`, dan
- * `updated_at`. Kilang membuat penugasan dari dashboard web, jadi tidak ada endpoint create di sini.
+ * itu TIDAK diekspos lewat API ini — respons berisi `pickup_id` (format `"pkp-007"`), `status`, `updated_at`,
+ * plus objek `driver` (sisi Agen) atau `agent` (sisi Driver) berisi nama, telepon, dan alamat/koordinat. Kilang membuat penugasan dari dashboard web, jadi tidak ada endpoint create di sini.
  *
  * Status ada 5: ASSIGNED → OTW → ARRIVED → COMPLETED, atau CANCELLED kapan saja sebelum selesai. Backend
  * TIDAK memvalidasi urutan transisi (PATCH menerima status apa saja dari 5 itu) — urutan di atas murni

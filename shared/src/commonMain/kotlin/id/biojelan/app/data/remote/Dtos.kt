@@ -266,6 +266,44 @@ data class PickupStatusDto(
     /** ASSIGNED, OTW, ARRIVED, COMPLETED, CANCELLED. */
     val status: String = "",
     @SerialName("updated_at") val updatedAt: String = "",
+    /** Hanya ada di GET /api/agent/pickup/status: Driver yang ditugaskan menjemput. */
+    val driver: PickupDriverDto? = null,
+    /** Hanya ada di GET/PATCH /api/driver/pickup/status: Agen tujuan jemput (nama, alamat, koordinat). */
+    val agent: PickupAgentDto? = null,
+)
+
+/** Objek `driver` di respons pickup sisi Agen (PickupStatusResource). */
+@Serializable
+data class PickupDriverDto(
+    @SerialName("driver_id") @Serializable(with = FlexibleStringSerializer::class)
+    val driverId: String = "",
+    val name: String = "",
+    val phone: String = "",
+    @SerialName("plate_number") val plateNumber: String = "",
+    @SerialName("type_vehicle") val typeVehicle: String = "",
+)
+
+/** Objek `agent` di respons pickup sisi Driver. Koordinat/alamat null kalau Agen belum punya profil. */
+@Serializable
+data class PickupAgentDto(
+    @SerialName("agent_id") @Serializable(with = FlexibleStringSerializer::class)
+    val agentId: String = "",
+    val name: String = "",
+    val phone: String = "",
+    val address: String = "",
+    @Serializable(with = FlexibleDoubleSerializer::class) val latitude: Double = 0.0,
+    @Serializable(with = FlexibleDoubleSerializer::class) val longitude: Double = 0.0,
+)
+
+// ============================================================ Kilang (Factory)
+
+/** GET /api/user/factory (role agent/driver/admin/superadmin) — lokasi Kilang pertama. */
+@Serializable
+data class FactoryDto(
+    @SerialName("factory_name") val factoryName: String = "",
+    val address: String = "",
+    @Serializable(with = FlexibleDoubleSerializer::class) val latitude: Double = 0.0,
+    @Serializable(with = FlexibleDoubleSerializer::class) val longitude: Double = 0.0,
 )
 
 /** Body PATCH /api/driver/pickup/status. `status`: ASSIGNED, OTW, ARRIVED, COMPLETED, CANCELLED. */

@@ -1,6 +1,7 @@
 package id.biojelan.app.ui.driver
 
 import androidx.lifecycle.viewModelScope
+import id.biojelan.app.core.KilangPoint
 import id.biojelan.app.core.changedStatus
 import id.biojelan.app.core.isToday
 import id.biojelan.app.core.parseIsoMillis
@@ -12,6 +13,7 @@ import id.biojelan.app.data.remote.PickupStatusDto
 import id.biojelan.app.data.remote.UserDto
 import id.biojelan.app.data.remote.AgenSummaryDto
 import id.biojelan.app.data.repository.DriverTransactionRepository
+import id.biojelan.app.data.repository.FactoryRepository
 import id.biojelan.app.data.repository.PickupRepository
 import id.biojelan.app.data.repository.PickupStatus
 import id.biojelan.app.data.repository.SessionManager
@@ -43,6 +45,8 @@ data class DriverUiState(
     val pickupLoading: Boolean = true,
     val pickupError: String? = null,
     val pickupBusy: Boolean = false,
+    /** Lokasi Kilang dari GET /api/user/factory; null = belum ada/ belum termuat (peta pakai posisi cadangan). */
+    val kilang: KilangPoint? = null,
 ) {
     private val todays
         get() = transactions.filter {
@@ -58,6 +62,7 @@ class DriverViewModel(
     private val transactions: DriverTransactionRepository,
     private val pickups: PickupRepository,
     private val users: UserRepository,
+    private val factories: FactoryRepository,
     session: SessionManager,
     override val liveAlerts: LiveAlerts,
 ) : BaseViewModel() {
@@ -72,6 +77,13 @@ class DriverViewModel(
     init {
         refresh()
         viewModelScope.launch { users.listAgen() }
+        viewModelScope.launch { loadKilang() }
+    }
+
+    /** Gagal-diam: tanpa lokasi Kilang, peta tetap jalan dengan titik cadangan dan tombol navigasi Kilang disembunyikan. */
+    private suspend fun loadKilang() {
+        val result = factories.location()
+        if (result is ApiResult.Success) _state.update { it.copy(kilang = result.data) }
     }
 
     /**
@@ -79,7 +91,13 @@ class DriverViewModel(
      * yang dipakai Klien untuk Cari Agen, jadi tidak perlu endpoint baru. Bisa null kalau daftar Agen belum
      * selesai dimuat atau Agen tidak ditemukan (mis. sudah nonaktif).
      */
-    fun agenLocation(agenId: String): AgenSummaryDto? = users.agenById(agenId)
+    fun agenLocation(agenId: String): AgenSummaryDto? = users.agenById(agenId) ?: pickupAgenFallback(agenId)
+
+    /** Cadangan dari objek `agent` di GET /api/driver/pickup/status bila Agen tidak ada di cache daftar Agen. */
+    private fun pickupAgenFallback(agenId: String): AgenSummaryDto? =
+        _state.value.pickup?.agent?.takeIf { it.agentId == agenId }?.let {
+            AgenSummaryDto(agenId = it.agentId, name = it.name, phone = it.phone, address = it.address, latitude = it.latitude, longitude = it.longitude)
+        }
 
     override fun canAutoRefresh(): Boolean = _state.value.let {
         !it.loading && !it.creating && !it.pickupBusy && it.busyTxId == null

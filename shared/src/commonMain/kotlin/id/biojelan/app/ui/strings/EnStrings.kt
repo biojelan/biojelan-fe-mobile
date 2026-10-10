@@ -50,6 +50,8 @@ object EnStrings : BioStrings {
     override val tabPickup = "Pickup"
     override val pickupTitle = "Pickup Info"
     override val pickupIdLabel = "Pickup ID"
+    override val pickupInfoDriver = "Driver"
+    override val pickupInfoVehicle = "Vehicle"
     override val pickupInfoUpdated = "Last updated"
     override val pickupInfoVolume = "Volume requested by Driver"
     override val pickupInfoVolumeValue = "from your location"
